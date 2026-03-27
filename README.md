@@ -10,7 +10,7 @@
 ![Issues](https://img.shields.io/github/issues/echodevlog/MinePulse?color=orange)
 
 <br />
-Get more info about this project bellow
+Get more info about this project bellow 
 
 [![Discord](https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/YOUR_INVITE_CODE)
 [![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@EchoDevlog)
