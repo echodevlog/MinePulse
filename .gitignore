@@ -1,0 +1,16 @@
+# Ignore the virtual environment folder
+.venv/
+venv/
+ENV/
+
+# Ignore the secret token file (CRITICAL)
+.env
+
+# Ignore local data/log files
+data/data.json
+data/logs.txt
+*.json
+__pycache__/
+
+# Ignore PyCharm internal settings
+.idea/
