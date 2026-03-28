@@ -199,11 +199,23 @@ class SetupView(discord.ui.View):
         if next_embed:
             await interaction.edit_original_response(embed=next_embed, view=self)
         else:
-            summary = (f"✅ **Setup complete!**\n"
-                       f"Server: `{config.SERVER_NAME}`\n"
-                       f"Timezone: `{config.TIMEZONE}`\n"
-                       f"Vote Time: `{self.vote_time.strftime('%I:%M %p') if self.vote_time else 'N/A'}`")
-            await interaction.edit_original_response(content=summary, embed=None, view=None)
+            self.clear_items()
+
+            embed = discord.Embed(
+                title="✅ Setup complete!",
+                description=(
+                    f"Server: `{config.SERVER_NAME}`"
+                    f"\nOnline Notifications: `{config.online_notification}`"
+                    f"\nVote Notifications: `{config.vote_notifications}`"
+                    f"\n\nTimezone: `{config.TIMEZONE}`"
+                    f"\nVote Time: `{self.vote_time.strftime('%I:%M %p') if self.vote_time else 'N/A'}`"
+                    f"\n\nThank you for choosing me!"),
+                color=discord.Color.green()
+            )
+            self.add_item(discord.ui.Button(label="YouTube", style=discord.ButtonStyle.link, url="https://www.youtube.com/@EchoDevlog"))
+            self.add_item(discord.ui.Button(label="Discord Server", style=discord.ButtonStyle.link, url="https://discord.gg/example"))
+
+            await interaction.edit_original_response(embed=embed, view=self)
             self.stop()
 
     async def open_name_modal_callback(self, interaction: discord.Interaction):
@@ -211,7 +223,6 @@ class SetupView(discord.ui.View):
 
     async def open_time_modal_callback(self, interaction: discord.Interaction):
         await interaction.response.send_modal(TimeModal(self))
-
 
 
 class DiscordCog(commands.Cog):
@@ -260,7 +271,10 @@ class DiscordCog(commands.Cog):
             if config.vote_notifications:
                 return discord.Embed(
                     title="Step 5: Notification Timing",
-                    description="1. Select your **Timezone**.\n2. Click the button to set your **preferred time**.",
+                    description=
+                        ("1. Select your **Timezone**."
+                        "\n2. Click the button to set your **preferred time**."
+                        "\n3. Press `Finish` button. (If you don't see your selected options but you did select them don't panic. The options were saved."),
                     color=discord.Color.orange())
             else:
                 return None
