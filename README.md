@@ -20,3 +20,17 @@ Get more info about this project bellow
 </div>
 
 ---
+
+## Setup guid
+
+Create your own instance of this bot (on discord developer portal). Than set up your own `.env` file. Follow the provided template in [example.env](example.env) file.
+
+After that run MinePulse bot.
+
+When bot joins your server you should type `/setup` command which will guid you through simple bot setup. Just follow the instructions in Discord's embedded message.
+
+If you'd like to change any configurations later use `/change` followed by setting you want to change.
+
+___
+
+## How it works
