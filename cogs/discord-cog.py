@@ -1,11 +1,9 @@
-from typing import Any
-
 import discord
 from discord import app_commands, Interaction
-from discord._types import ClientT
 from discord.ext import commands
 
 from data import config
+
 
 class RoleDropdown(discord.ui.RoleSelect):
     def __init__(self, parent_view: "SetupView"):
@@ -52,17 +50,37 @@ class MineHutModal(discord.ui.Modal, title="Name of MineHut's server"):
 
         await self.parent_view.continue_callback(interaction)
 
-class SetupDropdown(discord.ui.Select):
-    def __init__(self):
+class FunctionsDropdown(discord.ui.Select):
+    def __init__(self, parent_view: "SetupView"):
+        self.parent_view = parent_view
+
         options = [
-            discord.SelectOption(label="General Chat", description="Use the general channel for logs"),
-            discord.SelectOption(label="Admin Logs", description="Use a private staff channel"),
+            discord.SelectOption(
+                label="🌐 Online Notifications",
+                value="online",
+                description="I'll send a notification each time your MineHut server is online."),
+
+            discord.SelectOption(
+                label="🗳️ Vote Notifications",
+                value="vote",
+                description="I'll send daily notifications where you can vote for MineHut in order to get free credits."),
         ]
-        super().__init__(placeholder="Select staff role ...", min_values=1, max_values=1, options=options)
+        super().__init__(placeholder="Select which bot functions do you want to use ...", min_values=1, max_values=2, options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.send_message(f"Selected: {self.values[0]}", ephemeral=True)
+        config.online_notification = False
+        config.vote_notifications = False
 
+        if "online" in self.values:
+            config.online_notification = True
+        if "vote" in self.values:
+            config.vote_notifications = True
+
+        await self.parent_view.continue_callback(interaction)
+
+class TimezoneDropdown(discord.ui.Select):
+    def __init__(self, parent_view: "SetupView"):
+        self.parent_view = parent_view
 
 class SetupView(discord.ui.View):
     def __init__(self, cog: "DiscordCog"):
@@ -92,7 +110,13 @@ class SetupView(discord.ui.View):
             modal_btn.callback = self.open_modal_callback
             self.add_item(modal_btn)
 
-        if self.current_page not in [1, 2, 3]:
+        elif self.current_page == 4:
+            self.add_item(FunctionsDropdown(parent_view=self))
+
+        elif self.current_page == 5 and config.vote_notifications:
+            self.add_item(TimezoneDropdown(parent_view=self))
+
+        if self.current_page not in [1, 2, 3, 4]:
             if self.cog.dc_embed_for_setup(self.current_page + 1) is not None:
                 continue_btn = discord.ui.Button(label="Continue", style=discord.ButtonStyle.green, row=4)
                 continue_btn.callback = self.continue_callback
@@ -150,9 +174,21 @@ class DiscordCog(commands.Cog):
 
         elif embed_page == 3:
             return discord.Embed(
-                title="Stem 2: Name of your MineHut server",
+                title="Step 3: Name of your MineHut server",
                 description="Please enter your MineHut's server name:",
                 color=discord.Color.orange())
+
+        elif embed_page == 4:
+            return discord.Embed(
+                title="Step 4: Bot's functions",
+                description="Please select which bot's functions do you want to use. You can select one or both functions.",
+                color=discord.Color.orange())
+
+        elif embed_page == 5 and config.vote_notifications:
+                return discord.Embed(
+                    title="Step 5: Set time for vote notifications",
+                    description="Please select your timezone than press the button to enter when you want me to send you a vote notification.",
+                    color=discord.Color.orange())
 
         return None
 
