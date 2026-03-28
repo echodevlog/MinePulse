@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 # VARIABLES
 BOT_TOKEN : str | None = None
 GUILD_ID : int | None = None
+BOT_NAME : str = "MinePulse"
 
 def load_env():
     global BOT_TOKEN
