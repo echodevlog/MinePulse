@@ -7,10 +7,13 @@ BOT_TOKEN : str | None = None
 GUILD_ID : int | None = None
 BOT_NAME : str = "MinePulse"
 
+SERVER_NAME : str | None = None
+
 # Roles - objects
 STAFF_ROLE : discord.Role | None = None
 
 # Channels - Objects
+NOTIFICATIONS_CHANNEL : discord.TextChannel | None
 
 def load_env():
     global BOT_TOKEN

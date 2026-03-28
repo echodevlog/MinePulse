@@ -1,21 +1,56 @@
+from typing import Any
+
 import discord
 from discord import app_commands, Interaction
+from discord._types import ClientT
 from discord.ext import commands
 
 from data import config
 
 class RoleDropdown(discord.ui.RoleSelect):
     def __init__(self, parent_view: "SetupView"):
-        super().__init__(placeholder="Search for a role...", min_values=1, max_values=1)
+        super().__init__(placeholder="Search for staff role ...", min_values=1, max_values=1)
         self.parent_view = parent_view
 
     async def callback(self, interaction: discord.Interaction):
         selected_role = self.values[0]
-        self.parent_view.selected_staff_role = selected_role
+        self.parent_view.staff_role = selected_role
         config.STAFF_ROLE = selected_role
 
         await self.parent_view.continue_callback(interaction)
 
+class ChannelDropdown(discord.ui.ChannelSelect):
+    def __init__(self, parent_view: "SetupView"):
+        super().__init__(placeholder="Search for notification channel ...", min_values=1, max_values=1, channel_types=[discord.ChannelType.text])
+        self.parent_view = parent_view
+
+    async def callback(self, interaction: discord.Interaction):
+        selected_channel = self.values[0]
+        self.parent_view.notification_channel = selected_channel
+
+        await self.parent_view.continue_callback(interaction)
+
+class MineHutModal(discord.ui.Modal, title="Name of MineHut's server"):
+    server_name = discord.ui.TextInput(
+        label="What is your MineHut's server name?",
+        placeholder="e. g. MyEpicMineHutServer",
+        min_length=3,
+        max_length=32,
+        required=True
+    )
+
+    def __init__(self, parent_view: "SetupView"):
+        super().__init__()
+        self.parent_view = parent_view
+
+    async def on_submit(self, interaction: discord.Interaction):
+        if " " in self.server_name.value:
+            return await interaction.response.send_message("Error: MineHut server names cannot contain spaces. Please try again!", ephemeral=True)
+
+        self.parent_view.server_name = self.server_name.value
+        config.SERVER_NAME = self.server_name.value
+
+        await self.parent_view.continue_callback(interaction)
 
 class SetupDropdown(discord.ui.Select):
     def __init__(self):
@@ -34,7 +69,9 @@ class SetupView(discord.ui.View):
         super().__init__(timeout=None)
         self.cog : cog = cog
         self.current_page : int = 0
-        self.selected_staff_role : discord.Role | None = None
+        self.staff_role : discord.Role | None = None
+        self.notification_channel : discord.TextChannel | None = None
+        self.server_name : str | None = None
         self.create_page()
 
     def create_page(self):
@@ -47,7 +84,15 @@ class SetupView(discord.ui.View):
         elif self.current_page == 1:
             self.add_item(RoleDropdown(parent_view=self))
 
-        if self.current_page != 1:
+        elif self.current_page == 2:
+            self.add_item(ChannelDropdown(parent_view=self))
+
+        elif self.current_page == 3:
+            modal_btn = discord.ui.Button(label="Press here to enter your server name", style=discord.ButtonStyle.red)
+            modal_btn.callback = self.open_modal_callback
+            self.add_item(modal_btn)
+
+        if self.current_page not in [1, 2, 3]:
             if self.cog.dc_embed_for_setup(self.current_page + 1) is not None:
                 continue_btn = discord.ui.Button(label="Continue", style=discord.ButtonStyle.green, row=4)
                 continue_btn.callback = self.continue_callback
@@ -70,6 +115,8 @@ class SetupView(discord.ui.View):
             await interaction.edit_original_response(content="✅ Setup complete!", embed=None, view=None)
             self.stop()
 
+    async def open_modal_callback(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(MineHutModal(self))
 
 class DiscordCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -87,14 +134,26 @@ class DiscordCog(commands.Cog):
                     "I was built by **Echodevlog**. Don't forget to follow his socials!\n\n"
                     "When you're ready, press the button below 👇."
                 ),
-                color=discord.Color.orange()
-            )
+                color=discord.Color.orange())
+
         elif embed_page == 1:
             return discord.Embed(
                 title="Step 1: Staff",
                 description="Please select which role is your a staff role in the dropdown below:",
-                color=discord.Color.orange()
-            )
+                color=discord.Color.orange())
+
+        elif embed_page == 2:
+            return discord.Embed(
+                title="Step 2: Minecraft Server Updates",
+                description="Please select a channel in which I can send notifications about your minecraft server.",
+                color=discord.Color.orange())
+
+        elif embed_page == 3:
+            return discord.Embed(
+                title="Stem 2: Name of your MineHut server",
+                description="Please enter your MineHut's server name:",
+                color=discord.Color.orange())
+
         return None
 
     @app_commands.command(name="setup", description="Initial set up for the bot")
