@@ -70,11 +70,11 @@ class FunctionsDropdown(discord.ui.Select):
         super().__init__(placeholder="Select which bot functions do you want to use ...", min_values=1, max_values=2, options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        config.online_notification = False
+        config.online_notifications = False
         config.vote_notifications = False
 
         if "online" in self.values:
-            config.online_notification = True
+            config.online_notifications = True
         if "vote" in self.values:
             config.vote_notifications = True
 
@@ -205,7 +205,7 @@ class SetupView(discord.ui.View):
                 title="✅ Setup complete!",
                 description=(
                     f"Server: `{config.SERVER_NAME}`"
-                    f"\nOnline Notifications: `{config.online_notification}`"
+                    f"\nOnline Notifications: `{config.online_notifications}`"
                     f"\nVote Notifications: `{config.vote_notifications}`"
                     f"\n\nTimezone: `{config.TIMEZONE}`"
                     f"\nVote Time: `{self.vote_time.strftime('%I:%M %p') if self.vote_time else 'N/A'}`"
