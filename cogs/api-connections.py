@@ -19,7 +19,6 @@ class APIConnections(commands.Cog):
         else:
             return False
 
-
     def valid_server_checker(self):
         data = self.get_api_data()
 

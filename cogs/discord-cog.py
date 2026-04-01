@@ -55,12 +55,17 @@ class MineHutModal(discord.ui.Modal, title="Name of MineHut's server"):
 
     async def on_submit(self, interaction: discord.Interaction):
         if " " in self.server_name.value:
-            return await interaction.response.send_message("Error: MineHut server names cannot contain spaces. Please try again!", ephemeral=True)
+            return await interaction.response.send_message("❌ Error: MineHut server names cannot contain spaces. Please try again!", ephemeral=True)
 
-        self.parent_view.server_name = self.server_name.value
         config.SERVER_NAME = self.server_name.value
+        api_cog = self.parent_view.cog.bot.get_cog("APIConnections")
+        if api_cog.valid_server_checker():
+            self.parent_view.server_name = self.server_name.value
+            await self.parent_view.continue_callback(interaction)
 
-        await self.parent_view.continue_callback(interaction)
+        else:
+            config.SERVER_NAME = None
+            return await interaction.response.send_message(f"❌ Error: I can't find provided server (by the name: **{self.server_name.value}**). Please provide valid MineHut server name!", ephemeral=True)
 
 class FunctionsDropdown(discord.ui.Select):
     def __init__(self, parent_view: "SetupView"):
@@ -160,55 +165,45 @@ class SetupView(discord.ui.View):
 
     def create_page(self):
         self.clear_items()
-        print("Create page - CP:", self.current_page)
 
         # --- Social/Link Buttons ---
         if self.current_page == 0:
-            print("HERE 0")
             self.add_item(discord.ui.Button(label="YouTube", style=discord.ButtonStyle.link, url="https://www.youtube.com/@EchoDevlog"))
             self.add_item(discord.ui.Button(label="Discord Server", style=discord.ButtonStyle.link, url="https://discord.gg/example"))
 
         # --- Step 1: Staff Role ---
         elif self.current_page == 1:
-            print("HERE 1")
             self.add_item(RoleDropdown(parent_view=self, role_type="STAFF_ROLE"))
 
         # --- Step 2: Channel Selection ---
         elif self.current_page == 2:
-            print("HERE 2")
             self.add_item(ChannelDropdown(parent_view=self))
 
         # --- Step 3: Server Name ---
         elif self.current_page == 3:
-            print("HERE 3")
             modal_btn = discord.ui.Button(label="Press here to enter your server name", style=discord.ButtonStyle.red)
             modal_btn.callback = self.open_name_modal_callback
             self.add_item(modal_btn)
 
         # --- Step 4: Toggle Functions ---
         elif self.current_page == 4:
-            print("HERE 4")
             self.add_item(FunctionsDropdown(parent_view=self))
 
         # --- Step 5: Online Role ---
         elif self.current_page == 5:
-            print("HERE 5")
             self.add_item(RoleDropdown(parent_view=self, role_type="ONLINE_ROLE"))
 
         # --- Step 6: Vote Role ---
         elif self.current_page == 6 and config.vote_notifications:
-            print("HERE 6")
             self.add_item(RoleDropdown(parent_view=self, role_type="VOTE_ROLE"))
 
         # --- Step 7: Timezone & Timing ---
         elif self.current_page == 7 and config.vote_notifications:
-            print("HERE 7")
             self.add_item(TimezoneDropdown(parent_view=self))
             time_btn = discord.ui.Button(label="Enter set time here!", style=discord.ButtonStyle.red, row=1)
             time_btn.callback = self.open_time_modal_callback
             self.add_item(time_btn)
 
-        print("PASS IF STATMENT")
         if self.current_page not in [1, 2, 3, 4, 5, 6]:
             next_embed = self.cog.dc_embed_for_setup(self.current_page + 1)
 
@@ -228,12 +223,9 @@ class SetupView(discord.ui.View):
 
         if self.current_page == 5 and not config.online_notifications:
             self.current_page += 1
-            print("Skipping page. CP:", self.current_page)
 
         if self.current_page == 6 and not config.vote_notifications:
             self.current_page += 2
-            print("Skipping page. CP:", self.current_page)
-
 
         self.create_page()
         next_embed = self.cog.dc_embed_for_setup(self.current_page)
