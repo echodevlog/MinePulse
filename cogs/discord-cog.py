@@ -1,5 +1,5 @@
 import discord
-from discord import app_commands, Interaction
+from discord import app_commands
 from discord.ext import commands
 
 from datetime import datetime
@@ -8,14 +8,24 @@ from data import config
 
 
 class RoleDropdown(discord.ui.RoleSelect):
-    def __init__(self, parent_view: "SetupView"):
+    def __init__(self, parent_view: "SetupView", role_type: str):
         super().__init__(placeholder="Search for staff role ...", min_values=1, max_values=1)
         self.parent_view = parent_view
+        self.role_type = role_type
 
     async def callback(self, interaction: discord.Interaction):
         selected_role = self.values[0]
-        self.parent_view.staff_role = selected_role
-        config.STAFF_ROLE = selected_role
+
+        match self.role_type:
+            case "STAFF_ROLE":
+                self.parent_view.staff_role = selected_role
+                config.STAFF_ROLE = selected_role
+            case "ONLINE_ROLE":
+                self.parent_view.online_role = selected_role
+                config.ONLINE_ROLE = selected_role
+            case "VOTE_ROLE":
+                self.parent_view.online_role = selected_role
+                config.VOTE_ROLE = selected_role
 
         await self.parent_view.continue_callback(interaction)
 
@@ -142,38 +152,64 @@ class SetupView(discord.ui.View):
         self.staff_role : discord.Role | None = None
         self.notification_channel : discord.TextChannel | None = None
         self.server_name : str | None = None
+        self.online_role : discord.Role | None = None
+        self.vote_role : discord.Role | None = None
         self.timezone : str | None = None
         self.vote_time : datetime | None = None
         self.create_page()
 
     def create_page(self):
         self.clear_items()
+        print("Create page - CP:", self.current_page)
 
+        # --- Social/Link Buttons ---
         if self.current_page == 0:
+            print("HERE 0")
             self.add_item(discord.ui.Button(label="YouTube", style=discord.ButtonStyle.link, url="https://www.youtube.com/@EchoDevlog"))
             self.add_item(discord.ui.Button(label="Discord Server", style=discord.ButtonStyle.link, url="https://discord.gg/example"))
 
+        # --- Step 1: Staff Role ---
         elif self.current_page == 1:
-            self.add_item(RoleDropdown(parent_view=self))
+            print("HERE 1")
+            self.add_item(RoleDropdown(parent_view=self, role_type="STAFF_ROLE"))
 
+        # --- Step 2: Channel Selection ---
         elif self.current_page == 2:
+            print("HERE 2")
             self.add_item(ChannelDropdown(parent_view=self))
 
+        # --- Step 3: Server Name ---
         elif self.current_page == 3:
+            print("HERE 3")
             modal_btn = discord.ui.Button(label="Press here to enter your server name", style=discord.ButtonStyle.red)
             modal_btn.callback = self.open_name_modal_callback
             self.add_item(modal_btn)
 
+        # --- Step 4: Toggle Functions ---
         elif self.current_page == 4:
+            print("HERE 4")
             self.add_item(FunctionsDropdown(parent_view=self))
 
-        elif self.current_page == 5 and config.vote_notifications:
+        # --- Step 5: Online Role ---
+        elif self.current_page == 5:
+            print("HERE 5")
+            self.add_item(RoleDropdown(parent_view=self, role_type="ONLINE_ROLE"))
+
+        # --- Step 6: Vote Role ---
+        elif self.current_page == 6 and config.vote_notifications:
+            print("HERE 6")
+            self.add_item(RoleDropdown(parent_view=self, role_type="VOTE_ROLE"))
+
+        # --- Step 7: Timezone & Timing ---
+        elif self.current_page == 7 and config.vote_notifications:
+            print("HERE 7")
             self.add_item(TimezoneDropdown(parent_view=self))
             time_btn = discord.ui.Button(label="Enter set time here!", style=discord.ButtonStyle.red, row=1)
             time_btn.callback = self.open_time_modal_callback
             self.add_item(time_btn)
 
-        if self.current_page not in [1, 2, 3, 4]:
+        print("PASS IF STATMENT")
+        if self.current_page not in [1, 2, 3, 4, 5, 6]:
             next_embed = self.cog.dc_embed_for_setup(self.current_page + 1)
 
             if next_embed:
@@ -190,23 +226,40 @@ class SetupView(discord.ui.View):
             await interaction.response.defer()
         self.current_page += 1
 
-        if self.current_page == 5 and not config.vote_notifications:
+        if self.current_page == 5 and not config.online_notifications:
             self.current_page += 1
+            print("Skipping page. CP:", self.current_page)
+
+        if self.current_page == 6 and not config.vote_notifications:
+            self.current_page += 2
+            print("Skipping page. CP:", self.current_page)
+
 
         self.create_page()
         next_embed = self.cog.dc_embed_for_setup(self.current_page)
 
         if next_embed:
             await interaction.edit_original_response(embed=next_embed, view=self)
+
         else:
+            if config.vote_notifications:
+                if config.TIMEZONE is None:
+                    return await  interaction.followup.send("Please select your timezone before finishing setup.", ephemeral=True)
+                elif config.VOTE_TIME is None:
+                    return await  interaction.followup.send("Please enter when you'd line to receive vote notifications via red button.", ephemeral=True)
+
             self.clear_items()
+
+            online_str = f"{config.ONLINE_ROLE.mention}" if config.ONLINE_ROLE else f""
+            vote_str = f"{config.VOTE_ROLE.mention}" if config.VOTE_ROLE else f""
 
             embed = discord.Embed(
                 title="✅ Setup complete!",
                 description=(
-                    f"Server: `{config.SERVER_NAME}`"
-                    f"\nOnline Notifications: `{config.online_notifications}`"
-                    f"\nVote Notifications: `{config.vote_notifications}`"
+                    f"Staff: {config.STAFF_ROLE.mention}"
+                    f"\n\nServer: `{config.SERVER_NAME}`"
+                    f"\nOnline Notifications: `{config.online_notifications}`, {online_str}"
+                    f"\nVote Notifications: `{config.vote_notifications}`, {vote_str}"
                     f"\n\nTimezone: `{config.TIMEZONE}`"
                     f"\nVote Time: `{self.vote_time.strftime('%I:%M %p') if self.vote_time else 'N/A'}`"
                     f"\n\nThank you for choosing me!"),
@@ -216,6 +269,7 @@ class SetupView(discord.ui.View):
             self.add_item(discord.ui.Button(label="Discord Server", style=discord.ButtonStyle.link, url="https://discord.gg/example"))
 
             await interaction.edit_original_response(embed=embed, view=self)
+            config.setup_completed = True
             self.stop()
 
     async def open_name_modal_callback(self, interaction: discord.Interaction):
@@ -268,9 +322,24 @@ class DiscordCog(commands.Cog):
                 color=discord.Color.orange())
 
         elif embed_page == 5:
-            if config.vote_notifications:
+            if config.online_notifications:
                 return discord.Embed(
-                    title="Step 5: Notification Timing",
+                    title="Step 5: MC server online notification role",
+                    description="Which role can bot ping each time your Minecraft server goes online?",
+                    color=discord.Color.orange()
+                )
+
+        elif config.vote_notifications:
+            if embed_page == 6:
+                return discord.Embed(
+                    title="Step 6: Vote notification role",
+                    description="Which role can bot ping for vote notifications?",
+                    color=discord.Color.orange()
+                )
+
+            elif embed_page == 7:
+                return discord.Embed(
+                    title="Step 7: Notification Timing",
                     description=
                         ("1. Select your **Timezone**."
                         "\n2. Click the button to set your **preferred time**."
@@ -284,6 +353,26 @@ class DiscordCog(commands.Cog):
     @app_commands.command(name="setup", description="Initial set up for the bot")
     @app_commands.guilds(config.GUILD_ID)
     async def dc_setup(self, interaction: discord.Interaction):
+        if config.STAFF_ROLE is not None:
+            if not any(role == config.STAFF_ROLE for role in interaction.user.roles):
+                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+
+        if config.setup_completed:
+            embed = discord.Embed(
+                title="Setup was already completed",
+                description=("`/setup` function can only be run once. It seems like you already did that. If you'd like to change any bot's settings you can do it by using commands below:"
+                             "\n`/change notification channel`"
+                             "\n`/stop online notifications`"
+                             "\n`/stop vote notifications`"
+                             "\n`/change server name`"
+                             "\n`/change time zone`"
+                             "\n`/chainge vote timing`"
+                             "\n`/change vote role`"
+                             "\n`/change online role`"),
+                color=discord.Color.orange()
+            )
+            return await interaction.response.send_message(embed=embed, ephemeral=True)
+
         view = SetupView(self)
         embed = self.dc_embed_for_setup(0)
 

@@ -12,12 +12,18 @@ ___
 ## Bot setup and configurations
 `/setup` - Initial command. Run it when the bot first joins your server. It will take you through easy bot setup.
 
-`/chainge vote timing`
+´/change notification channel´
 
-`/change server name`
-
-`/change notification channel`
+`/stop online notifications`
 
 `/stop vote notifications`
 
-`/stop online notifications`
+`/change server name`
+
+`/change time zone`
+
+`/chainge vote timing`
+
+`/change vote role`
+
+`/change online role`

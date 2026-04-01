@@ -7,6 +7,7 @@ import discord
 BOT_TOKEN : str | None = None
 GUILD_ID : int | None = None
 BOT_NAME : str = "MinePulse"
+setup_completed : bool = False
 
 # Minecraft variables
 SERVER_NAME : str | None = None
