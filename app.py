@@ -14,7 +14,6 @@ intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 guild = discord.Object(id=config.GUILD_ID)
 
-
 async def load_cogs():
     for filename in os.listdir("cogs"):
         if filename.endswith(".py"):
@@ -31,7 +30,6 @@ async def sync():
 
     for command in synced:
         print(f"{command.name}")
-
 
 @bot.event
 async def on_ready():
