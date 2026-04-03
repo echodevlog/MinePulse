@@ -9,7 +9,7 @@ from data import config
 
 class RoleDropdown(discord.ui.RoleSelect):
     def __init__(self, parent_view: "SetupView", role_type: str):
-        super().__init__(placeholder="Search for staff role ...", min_values=1, max_values=1)
+        super().__init__(placeholder="Search for role ...", min_values=1, max_values=1)
         self.parent_view = parent_view
         self.role_type = role_type
 
@@ -20,12 +20,15 @@ class RoleDropdown(discord.ui.RoleSelect):
             case "STAFF_ROLE":
                 self.parent_view.staff_role = selected_role
                 config.STAFF_ROLE = selected_role
+                config.update_data("roles", "staff_role_id", selected_role.id)
             case "ONLINE_ROLE":
                 self.parent_view.online_role = selected_role
                 config.ONLINE_ROLE = selected_role
+                config.update_data("roles", "online_role_id", selected_role.id)
             case "VOTE_ROLE":
                 self.parent_view.online_role = selected_role
                 config.VOTE_ROLE = selected_role
+                config.update_data("roles", "vote_role_id", selected_role.id)
 
         await self.parent_view.continue_callback(interaction)
 
@@ -37,6 +40,8 @@ class ChannelDropdown(discord.ui.ChannelSelect):
     async def callback(self, interaction: discord.Interaction):
         selected_channel = self.values[0]
         self.parent_view.notification_channel = selected_channel
+        config.NOTIFICATIONS_CHANNEL = selected_channel
+        config.update_data("text_channels", "notification_channel_id", selected_channel.id)
 
         await self.parent_view.continue_callback(interaction)
 
@@ -61,6 +66,7 @@ class MineHutModal(discord.ui.Modal, title="Name of MineHut's server"):
         api_cog = self.parent_view.cog.bot.get_cog("APIConnections")
         if api_cog.valid_server_checker():
             self.parent_view.server_name = self.server_name.value
+            config.update_data("settings", "server_name", self.server_name.value)
             await self.parent_view.continue_callback(interaction)
 
         else:
@@ -90,8 +96,10 @@ class FunctionsDropdown(discord.ui.Select):
 
         if "online" in self.values:
             config.online_notifications = True
+            config.update_data("settings", "online_notifications", True)
         if "vote" in self.values:
             config.vote_notifications = True
+            config.update_data("settings", "vote_notifications", True)
 
         await self.parent_view.continue_callback(interaction)
 
@@ -121,6 +129,7 @@ class TimezoneDropdown(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         self.parent_view.timezone = self.values[0]
         config.TIMEZONE = self.values[0]
+        config.update_data("settings", "timezone", self.values[0])
         await interaction.response.edit_message(view=self.parent_view)
 
 class TimeModal(discord.ui.Modal, title="Timing for vote notifications"):
@@ -143,6 +152,7 @@ class TimeModal(discord.ui.Modal, title="Timing for vote notifications"):
             converted_time = datetime.strptime(time_str, "%I:%M %p").time()
             self.parent_view.vote_time = converted_time
             config.VOTE_TIME = converted_time
+            config.update_data("settings", "vote_time", str(converted_time))
 
             await interaction.response.edit_message(view=self.parent_view)
 
@@ -262,6 +272,7 @@ class SetupView(discord.ui.View):
 
             await interaction.edit_original_response(embed=embed, view=self)
             config.setup_completed = True
+            config.update_data("settings", "setup_completed", True)
             self.stop()
 
     async def open_name_modal_callback(self, interaction: discord.Interaction):
@@ -370,7 +381,24 @@ class DiscordCog(commands.Cog):
 
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-
+    @app_commands.command(name="data-test", description="Test function for data readability")
+    @app_commands.guilds(config.GUILD_ID)
+    async def data_test(self, interaction: discord.Interaction):
+        output = (
+            f"setup_completed: {config.setup_completed}"
+            f"\nonline_notifications: {config.online_notifications}"
+            f"\nvote_notifications: {config.vote_notifications}"
+            f"\nSERVER_NAME: {config.SERVER_NAME}"
+            f"\nTIMEZONE: {config.TIMEZONE}"
+            f"\nVOTE_TIME: {config.VOTE_TIME}"
+            f"\nNOTIFICATIONS_CHANNEL: {config.NOTIFICATIONS_CHANNEL}"
+            f"\nSTAFF_ROLE: {config.STAFF_ROLE}"
+            f"\nONLINE_ROLE: {config.ONLINE_ROLE}"
+            f"\nVOTE_ROLE: {config.VOTE_ROLE}"
+            f"\nonline_message: {config.online_message}"
+            f"\nvote_message: {config.vote_message}"
+        )
+        await interaction.response.send_message(output)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(DiscordCog(bot))
