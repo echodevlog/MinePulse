@@ -94,7 +94,7 @@ async def read_data_file():
         vote_notifications = saved_data["settings"]["vote_notifications"]
         SERVER_NAME = saved_data["settings"]["server_name"]
         TIMEZONE = saved_data["settings"]["timezone"]
-        VOTE_TIME = saved_data["settings"]["vote_time"]
+        VOTE_TIME = datetime.strptime(saved_data["settings"]["vote_time"], "%H:%M:%S").time()
 
         # Text Channels
         NOTIFICATIONS_CHANNEL = await discord_object_converter(saved_data["text_channels"]["notification_channel_id"])
@@ -125,7 +125,6 @@ async def discord_object_converter(data_id : int | None):
         return output_obj
 
     if bot.get_channel(data_id):
-        print("I'm here!")
         output_obj = bot.get_channel(data_id)
 
     elif guild.get_role(data_id) is not None:
