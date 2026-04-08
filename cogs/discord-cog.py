@@ -7,6 +7,11 @@ from datetime import datetime
 from data import config
 
 
+class RoleDropdownStandAlone(discord.ui.View):
+    def __init__(self, cog: commands.Cog, role_type : str):
+        super().__init__(timeout=180)
+        self.add_item(RoleDropdown(parent_view=cog, role_type=role_type))
+
 class RoleDropdown(discord.ui.RoleSelect):
     def __init__(self, parent_view: "SetupView", role_type: str):
         super().__init__(placeholder="Search for role ...", min_values=1, max_values=1)
@@ -18,19 +23,36 @@ class RoleDropdown(discord.ui.RoleSelect):
 
         match self.role_type:
             case "STAFF_ROLE":
-                self.parent_view.staff_role = selected_role
                 config.STAFF_ROLE = selected_role
                 config.update_data("roles", "staff_role_id", selected_role.id)
+                if hasattr(self.parent_view, "create_page"):
+                    self.parent_view.staff_role = selected_role
+                else:
+                    return await interaction.response.edit_message(content=f"✅ Your new staff role is set to `@{selected_role}`", view=None)
+
             case "ONLINE_ROLE":
-                self.parent_view.online_role = selected_role
                 config.ONLINE_ROLE = selected_role
                 config.update_data("roles", "online_role_id", selected_role.id)
+                if hasattr(self.parent_view, "create_page"):
+                    self.parent_view.online_role = selected_role
+                else:
+                    return await interaction.response.edit_message(content=f"✅ Your new online role is set to `@{selected_role}`", view=None)
+
             case "VOTE_ROLE":
-                self.parent_view.online_role = selected_role
                 config.VOTE_ROLE = selected_role
                 config.update_data("roles", "vote_role_id", selected_role.id)
+                if hasattr(self.parent_view, "create_page"):
+                    self.parent_view.vote_role = selected_role
+                else:
+                    return await interaction.response.edit_message(content=f"✅ Your new vote role is set to `@{selected_role}`", view=None)
 
-        await self.parent_view.continue_callback(interaction)
+        if hasattr(self.parent_view, "create_page"):
+            await self.parent_view.continue_callback(interaction)
+
+class ChannelDropdownStandAlone(discord.ui.View):
+    def __init__(self, cog: commands.Cog):
+        super().__init__(timeout=180)
+        self.add_item(ChannelDropdown(parent_view=cog))
 
 class ChannelDropdown(discord.ui.ChannelSelect):
     def __init__(self, parent_view: "SetupView"):
@@ -39,11 +61,14 @@ class ChannelDropdown(discord.ui.ChannelSelect):
 
     async def callback(self, interaction: discord.Interaction):
         selected_channel = self.values[0]
-        self.parent_view.notification_channel = selected_channel
         config.NOTIFICATIONS_CHANNEL = selected_channel
         config.update_data("text_channels", "notification_channel_id", selected_channel.id)
 
-        await self.parent_view.continue_callback(interaction)
+        if hasattr(self.parent_view, "create_page"):
+            self.parent_view.notification_channel = selected_channel
+            return await self.parent_view.continue_callback(interaction)
+        else:
+            return await interaction.response.edit_message(content=f"✅ Your new notification channel is set to `#{selected_channel}`", view=None)
 
 class MineHutModal(discord.ui.Modal, title="Name of MineHut's server"):
     server_name = discord.ui.TextInput(
@@ -116,6 +141,11 @@ class FunctionsDropdown(discord.ui.Select):
 
         await self.parent_view.continue_callback(interaction)
 
+class TimezoneDropdownStandalone(discord.ui.View):
+    def __init__(self, cog: commands.Cog):
+        super().__init__(timeout=180)
+        self.add_item(TimezoneDropdown(parent_view=cog))
+
 class TimezoneDropdown(discord.ui.Select):
     def __init__(self, parent_view: "SetupView"):
         self.parent_view = parent_view
@@ -141,14 +171,17 @@ class TimezoneDropdown(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         selected_timezone = self.values[0]
-        self.parent_view.timezone = selected_timezone
         config.TIMEZONE = selected_timezone
         config.update_data("settings", "timezone", selected_timezone)
 
         for option in self.options:
             option.default = (option.value == selected_timezone)
 
-        await interaction.response.edit_message(view=self.parent_view)
+        if hasattr(self.parent_view, "create_page"):
+            self.parent_view.timezone = selected_timezone
+            await interaction.response.edit_message(view=self.parent_view)
+        else:
+            await interaction.response.edit_message(content=f"✅ Timezone updated to **{selected_timezone}**", view=None)
 
 class TimeModal(discord.ui.Modal, title="Timing for vote notifications"):
     vote_time = discord.ui.TextInput(
@@ -168,13 +201,15 @@ class TimeModal(discord.ui.Modal, title="Timing for vote notifications"):
 
         try:
             converted_time = datetime.strptime(time_str, "%I:%M %p").time()
-            self.parent_view.vote_time = converted_time
             config.VOTE_TIME = converted_time
             config.update_data("settings", "vote_time", str(converted_time))
 
-            self.parent_view.create_page()
-
-            await interaction.response.edit_message(view=self.parent_view)
+            if hasattr(self.parent_view, "create_page"):
+                self.parent_view.vote_time = converted_time
+                self.parent_view.create_page()
+                await interaction.response.edit_message(view=self.parent_view)
+            else:
+                await interaction.response.send_message(f"✅ Vote timing has been set to: `{converted_time}`", ephemeral=True)
 
         except ValueError:
             return await interaction.response.send_message("❌ **Invalid Format!** Please use the format `HH:MM am/pm` (e.g., `06:30 pm`).", ephemeral=True)
@@ -317,11 +352,12 @@ class DiscordCog(commands.Cog):
 
     dc = app_commands.Group(name="dc", description="Discord commands", guild_ids=[config.GUILD_ID])
 
-    change = app_commands.Group(name="chainge", description="Change settings", guild_ids=[config.GUILD_ID])
+    change = app_commands.Group(name="change", description="Change settings", guild_ids=[config.GUILD_ID])
     server = app_commands.Group(name="server", description="Server related commands", guild_ids=[config.GUILD_ID], parent=change)
     vote = app_commands.Group(name="vote", description="Vote related commands", guild_ids=[config.GUILD_ID], parent=change)
     online = app_commands.Group(name="online", description="Online related commands", guild_ids=[config.GUILD_ID], parent=change)
     staff = app_commands.Group(name="staff", description="Staff related commands", guild_ids=[config.GUILD_ID], parent=change)
+    notification = app_commands.Group(name="notification", description="Notification related commands", guild_ids=[config.GUILD_ID], parent=change)
 
     def dc_embed_for_setup(self, embed_page: int):
         if embed_page == 0:
@@ -404,7 +440,7 @@ class DiscordCog(commands.Cog):
                              "\n`/stop vote notifications`"
                              "\n`/change server name`"
                              "\n`/change time zone`"
-                             "\n`/chainge vote timing`"
+                             "\n`/change vote timing`"
                              "\n`/change vote role`"
                              "\n`/change online role`"),
                 color=discord.Color.orange()
@@ -439,35 +475,92 @@ class DiscordCog(commands.Cog):
     async def change_server_name(self, interaction: discord.Interaction):
         if config.STAFF_ROLE is not None:
             if config.STAFF_ROLE not in interaction.user.roles:
-                await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
 
         else:
             if not config.setup_completed:
-                await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+                return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
 
         modal = MineHutModal(self)
-        # config.update_data(search="server_name", search_type="settings", data=)
-        await interaction.response.send_modal(modal)
+        return await interaction.response.send_modal(modal)
 
     @vote.command(name="timezone", description="Change vote timezone setting")
     async def change_vote_timezone(self, interaction: discord.Interaction):
-        pass
+        if config.STAFF_ROLE is not None:
+            if config.STAFF_ROLE not in interaction.user.roles:
+                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+
+        else:
+            if not config.setup_completed:
+                return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+
+        view = TimezoneDropdownStandalone(self)
+        return await interaction.response.send_message(f"Please select your new timezone:", view=view, ephemeral=True)
 
     @vote.command(name="timing", description="Change vote timing setting")
-    async def chainge_vote_timing(self, interaction: discord.Interaction):
-        pass
+    async def change_vote_timing(self, interaction: discord.Interaction):
+        if config.STAFF_ROLE is not None:
+            if config.STAFF_ROLE not in interaction.user.roles:
+                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
 
-    @vote.command(name="role", description="Change vote role setting")
-    async def change_vote_role(self, interaction: discord.Interaction):
-        pass
+        else:
+            if not config.setup_completed:
+                return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
 
-    @online.command(name="role", description="Change online role setting")
-    async def change_online_role(self, interaction: discord.Interaction):
-        pass
+        modal = TimeModal(self)
+        return await interaction.response.send_modal(modal)
 
     @staff.command(name="role", description="Change staff role setting")
     async def change_staff_role(self, interaction: discord.Interaction):
-        pass
+        if config.STAFF_ROLE is not None:
+            if config.STAFF_ROLE not in interaction.user.roles:
+                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+
+        else:
+            if not config.setup_completed:
+                return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+
+        view = RoleDropdownStandAlone(self, "STAFF_ROLE")
+        return await interaction.response.send_message(f"Please select your new staff role (**DISCLAIMER: Please note that all staff commands won't be available to be used from current staff role. Make sure you have a new role applied!**):", view=view, ephemeral=True)
+
+    @online.command(name="role", description="Change online role setting")
+    async def change_online_role(self, interaction: discord.Interaction):
+        if config.ONLINE_ROLE is not None:
+            if config.ONLINE_ROLE not in interaction.user.roles:
+                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+
+        else:
+            if not config.setup_completed:
+                return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+
+        view = RoleDropdownStandAlone(self, "ONLINE_ROLE")
+        return await interaction.response.send_message(f"Please select your new online notification role:", view=view, ephemeral=True)
+
+    @vote.command(name="role", description="Change vote role setting")
+    async def change_vote_role(self, interaction: discord.Interaction):
+        if config.VOTE_ROLE is not None:
+            if config.VOTE_ROLE not in interaction.user.roles:
+                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+
+        else:
+            if not config.setup_completed:
+                return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+
+        view = RoleDropdownStandAlone(self, "VOTE_ROLE")
+        return await interaction.response.send_message(f"Please select your new vote notification role:", view=view, ephemeral=True)
+
+    @notification.command(name="channel", description="Change notification channel setting")
+    async def change_notification_channel(self, interaction: discord.Interaction):
+        if config.VOTE_ROLE is not None:
+            if config.VOTE_ROLE not in interaction.user.roles:
+                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+
+        else:
+            if not config.setup_completed:
+                return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+
+        view = ChannelDropdownStandAlone(self)
+        return await interaction.response.send_message(f"please select your new notification channel:", view=view, ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(DiscordCog(bot))
