@@ -20,7 +20,7 @@ ___
 
 `/change server name`
 
-`/change time zone`
+`/change vote timezone`
 
 `/chainge vote timing`
 

@@ -23,6 +23,13 @@ Get more info about this project bellow
 
 ## Setup guid
 
+Before setting up MinePulse you should create the following channels and roles in your discord server (the names don't matter just remember them for later):
+
+- `#notification-channel` a channel where you want MinePules to send messages in
+- `@staff-role` (staff/admin role) if you don't have one yet. Anyone with this role will be able to change setting of MinePulse
+- `@online-notification-role` MinePulse will ping this role each time your MineHut server goes online (if enabled)
+- `@vote-notification-role` MinePulse will ping this role daily with a vote notification for MineHut server for free daily credits (if enabled)
+
 Create your own instance of this bot (on discord developer portal). Than set up your own `.env` file. Follow the provided template in [example.env](example.env) file.
 
 After that run MinePulse bot.

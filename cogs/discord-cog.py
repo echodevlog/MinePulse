@@ -63,11 +63,24 @@ class MineHutModal(discord.ui.Modal, title="Name of MineHut's server"):
             return await interaction.response.send_message("❌ Error: MineHut server names cannot contain spaces. Please try again!", ephemeral=True)
 
         config.SERVER_NAME = self.server_name.value
-        api_cog = self.parent_view.cog.bot.get_cog("APIConnections")
-        if api_cog.valid_server_checker():
-            self.parent_view.server_name = self.server_name.value
+
+        if isinstance(self.parent_view, commands.Cog):
+            bot = self.parent_view.bot
+        else:
+            bot = self.parent_view.cog.bot
+
+        api_cog = bot.get_cog("APIConnections")
+
+        if api_cog and api_cog.valid_server_checker():
+            if hasattr(self.parent_view, "server_name"):
+                self.parent_view.server_name = self.server_name.value
+
             config.update_data("settings", "server_name", self.server_name.value)
-            await self.parent_view.continue_callback(interaction)
+
+            if hasattr(self.parent_view, "continue_callback"):
+                await self.parent_view.continue_callback(interaction)
+            else:
+                await interaction.response.send_message(f"✅ Server name updated to: **{self.server_name.value}**", ephemeral=True)
 
         else:
             config.SERVER_NAME = None
@@ -127,9 +140,14 @@ class TimezoneDropdown(discord.ui.Select):
         super().__init__(placeholder="Select your server's timezone...", min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        self.parent_view.timezone = self.values[0]
-        config.TIMEZONE = self.values[0]
-        config.update_data("settings", "timezone", self.values[0])
+        selected_timezone = self.values[0]
+        self.parent_view.timezone = selected_timezone
+        config.TIMEZONE = selected_timezone
+        config.update_data("settings", "timezone", selected_timezone)
+
+        for option in self.options:
+            option.default = (option.value == selected_timezone)
+
         await interaction.response.edit_message(view=self.parent_view)
 
 class TimeModal(discord.ui.Modal, title="Timing for vote notifications"):
@@ -154,6 +172,8 @@ class TimeModal(discord.ui.Modal, title="Timing for vote notifications"):
             config.VOTE_TIME = converted_time
             config.update_data("settings", "vote_time", str(converted_time))
 
+            self.parent_view.create_page()
+
             await interaction.response.edit_message(view=self.parent_view)
 
         except ValueError:
@@ -162,7 +182,7 @@ class TimeModal(discord.ui.Modal, title="Timing for vote notifications"):
 class SetupView(discord.ui.View):
     def __init__(self, cog: "DiscordCog"):
         super().__init__(timeout=None)
-        self.cog : cog = cog
+        self.cog = cog
         self.current_page : int = 0
         self.staff_role : discord.Role | None = None
         self.notification_channel : discord.TextChannel | None = None
@@ -210,7 +230,16 @@ class SetupView(discord.ui.View):
         # --- Step 7: Timezone & Timing ---
         elif self.current_page == 7 and config.vote_notifications:
             self.add_item(TimezoneDropdown(parent_view=self))
-            time_btn = discord.ui.Button(label="Enter set time here!", style=discord.ButtonStyle.red, row=1)
+
+            if self.vote_time:
+                time_display = self.vote_time.strftime("%I:%M %p")
+                button_label = f"Timing set to {time_display}"
+                button_style = discord.ButtonStyle.green
+            else:
+                button_label = "Enter timing here"
+                button_style = discord.ButtonStyle.red
+
+            time_btn = discord.ui.Button(label=button_label, style=button_style, row=1)
             time_btn.callback = self.open_time_modal_callback
             self.add_item(time_btn)
 
@@ -263,7 +292,7 @@ class SetupView(discord.ui.View):
                     f"\nOnline Notifications: `{config.online_notifications}`, {online_str}"
                     f"\nVote Notifications: `{config.vote_notifications}`, {vote_str}"
                     f"\n\nTimezone: `{config.TIMEZONE}`"
-                    f"\nVote Time: `{self.vote_time.strftime('%I:%M %p') if self.vote_time else 'N/A'}`"
+                    f"\nVote Timing: `{self.vote_time.strftime('%I:%M %p') if self.vote_time else 'N/A'}`"
                     f"\n\nThank you for choosing me!"),
                 color=discord.Color.green()
             )
@@ -287,6 +316,12 @@ class DiscordCog(commands.Cog):
         self.bot = bot
 
     dc = app_commands.Group(name="dc", description="Discord commands", guild_ids=[config.GUILD_ID])
+
+    change = app_commands.Group(name="chainge", description="Change settings", guild_ids=[config.GUILD_ID])
+    server = app_commands.Group(name="server", description="Server related commands", guild_ids=[config.GUILD_ID], parent=change)
+    vote = app_commands.Group(name="vote", description="Vote related commands", guild_ids=[config.GUILD_ID], parent=change)
+    online = app_commands.Group(name="online", description="Online related commands", guild_ids=[config.GUILD_ID], parent=change)
+    staff = app_commands.Group(name="staff", description="Staff related commands", guild_ids=[config.GUILD_ID], parent=change)
 
     def dc_embed_for_setup(self, embed_page: int):
         if embed_page == 0:
@@ -357,7 +392,7 @@ class DiscordCog(commands.Cog):
     @app_commands.guilds(config.GUILD_ID)
     async def dc_setup(self, interaction: discord.Interaction):
         if config.STAFF_ROLE is not None:
-            if not any(role == config.STAFF_ROLE for role in interaction.user.roles):
+            if config.STAFF_ROLE not in interaction.user.roles:
                 return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
 
         if config.setup_completed:
@@ -399,6 +434,40 @@ class DiscordCog(commands.Cog):
             f"\nvote_message: {config.vote_message}"
         )
         await interaction.response.send_message(output)
+
+    @server.command(name="name", description="Change server name setting")
+    async def change_server_name(self, interaction: discord.Interaction):
+        if config.STAFF_ROLE is not None:
+            if config.STAFF_ROLE not in interaction.user.roles:
+                await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+
+        else:
+            if not config.setup_completed:
+                await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+
+        modal = MineHutModal(self)
+        # config.update_data(search="server_name", search_type="settings", data=)
+        await interaction.response.send_modal(modal)
+
+    @vote.command(name="timezone", description="Change vote timezone setting")
+    async def change_vote_timezone(self, interaction: discord.Interaction):
+        pass
+
+    @vote.command(name="timing", description="Change vote timing setting")
+    async def chainge_vote_timing(self, interaction: discord.Interaction):
+        pass
+
+    @vote.command(name="role", description="Change vote role setting")
+    async def change_vote_role(self, interaction: discord.Interaction):
+        pass
+
+    @online.command(name="role", description="Change online role setting")
+    async def change_online_role(self, interaction: discord.Interaction):
+        pass
+
+    @staff.command(name="role", description="Change staff role setting")
+    async def change_staff_role(self, interaction: discord.Interaction):
+        pass
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(DiscordCog(bot))
