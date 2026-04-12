@@ -137,3 +137,18 @@ async def discord_object_converter(data_id : int | None):
             pass
 
     return output_obj
+
+async def start_loops():
+    loops_cog = bot.get_cog("Loops")
+
+    if loops_cog:
+        if online_notifications:
+            loops_cog.sever_online_loop.start()
+            print("Starting online loop")
+
+        elif vote_notifications:
+            loops_cog.vote_MH_loop.start()
+            print("Starting vote loop")
+
+        else:
+            print("No loops activated")

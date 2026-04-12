@@ -45,6 +45,10 @@ async def on_ready():
 
     print(f"\nLogged in as {bot.user} (ID: {bot.user.id})")
 
+    if config.setup_completed:
+        print("Starting all loops")
+        await config.start_loops()
+
     await sync()
 
 bot.run(config.BOT_TOKEN)

@@ -19,7 +19,8 @@ class RoleDropdown(discord.ui.RoleSelect):
         self.role_type = role_type
 
     async def callback(self, interaction: discord.Interaction):
-        selected_role = self.values[0]
+        selected_role_id = self.values[0].id
+        selected_role = interaction.guild.get_role(selected_role_id)
 
         match self.role_type:
             case "STAFF_ROLE":
@@ -60,7 +61,9 @@ class ChannelDropdown(discord.ui.ChannelSelect):
         self.parent_view = parent_view
 
     async def callback(self, interaction: discord.Interaction):
-        selected_channel = self.values[0]
+        selected_channel_id = self.values[0].id
+        selected_channel = interaction.guild.get_channel(selected_channel_id)
+
         config.NOTIFICATIONS_CHANNEL = selected_channel
         config.update_data("text_channels", "notification_channel_id", selected_channel.id)
 
@@ -337,6 +340,7 @@ class SetupView(discord.ui.View):
             await interaction.edit_original_response(embed=embed, view=self)
             config.setup_completed = True
             config.update_data("settings", "setup_completed", True)
+            await config.start_loops()
             self.stop()
 
     async def open_name_modal_callback(self, interaction: discord.Interaction):
