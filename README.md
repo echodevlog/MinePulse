@@ -32,9 +32,9 @@ Before setting up MinePulse you should create the following channels and roles i
 
 Create your own instance of this bot (on discord developer portal). Than set up your own `.env` file. Follow the provided template in [example.env](example.env) file.
 
-After that run MinePulse bot.
+After that run MinePulse bot. `data.josn` and `logs.txt` files will be created automatically.
 
-When bot joins your server you should type `/setup` command which will guid you through simple bot setup. Just follow the instructions in Discord's embedded message.
+When bot joins your Discord server you should type `/setup` command which will guid you through simple bot setup. Just follow the instructions in Discord's embedded message.
 
 If you'd like to change any configurations later use `/change` followed by setting you want to change.
 

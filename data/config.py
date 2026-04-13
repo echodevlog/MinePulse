@@ -14,18 +14,22 @@ setup_completed : bool = False
 bot : commands.Bot | None = None
 guild : discord.Object | None = None
 
-# Minecraft variables
-SERVER_NAME : str | None = None
-
 # File paths
 data_file = "data/data.json"
 logs_file = "data/logs.txt"
 
 # Enabled functions
-online_notifications : bool = False
-vote_notifications : bool = False
+online_notification : bool = False
+vote_notification : bool = False
+
+# Public variables
+online_notification_interval : int = 120 #(in seconds)
+vote_notification_interval : int = 24 #(in hours)
 TIMEZONE : str | None = None
 VOTE_TIME : datetime | None= None
+
+# Minecraft variables
+SERVER_NAME : str | None = None
 
 # Text Channels - Objects
 NOTIFICATIONS_CHANNEL : discord.TextChannel | None = None
@@ -80,7 +84,7 @@ def create_data_file():
         json.dump(default_data, file, indent=4)
 
 async def read_data_file():
-    global setup_completed, online_notifications, vote_notifications, SERVER_NAME, TIMEZONE, VOTE_TIME
+    global setup_completed, online_notification, vote_notification, SERVER_NAME, TIMEZONE, VOTE_TIME
     global NOTIFICATIONS_CHANNEL
     global STAFF_ROLE, ONLINE_ROLE, VOTE_ROLE
     global online_message, vote_message
@@ -90,8 +94,8 @@ async def read_data_file():
 
         # Settings
         setup_completed = saved_data["settings"]["setup_completed"]
-        online_notifications = saved_data["settings"]["online_notifications"]
-        vote_notifications = saved_data["settings"]["vote_notifications"]
+        online_notification = saved_data["settings"]["online_notifications"]
+        vote_notification = saved_data["settings"]["vote_notifications"]
         SERVER_NAME = saved_data["settings"]["server_name"]
         TIMEZONE = saved_data["settings"]["timezone"]
         VOTE_TIME = datetime.strptime(saved_data["settings"]["vote_time"], "%H:%M:%S").time()
@@ -109,8 +113,6 @@ async def read_data_file():
         vote_message = await discord_object_converter(saved_data["messages"]["vote_message_id"])
 
 def update_data(search_type : str, search : str, data : int | None | bool | str):
-    print(f"Changing: {search}, with data: {data}, with a type of: {type(data)}")
-
     with open(data_file, "r") as file:
         file_data = json.load(file)
 
@@ -142,13 +144,31 @@ async def start_loops():
     loops_cog = bot.get_cog("Loops")
 
     if loops_cog:
-        if online_notifications:
+        if online_notification:
             loops_cog.sever_online_loop.start()
             print("Starting online loop")
 
-        elif vote_notifications:
+        elif vote_notification:
             loops_cog.vote_MH_loop.start()
             print("Starting vote loop")
 
         else:
             print("No loops activated")
+
+def time_conversion(milliseconds : int):
+    total_seconds = milliseconds // 1000
+    minutes, seconds = divmod(total_seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
+
+    return days, hours, minutes, seconds
+
+def date_conversion(milliseconds : int):
+    if not milliseconds or milliseconds == 0:
+        return "Not yet"
+
+    seconds = milliseconds / 1000
+    date_object = datetime.fromtimestamp(seconds)
+    readable_date = date_object.strftime("%d %b %Y - %H:%M")
+
+    return readable_date

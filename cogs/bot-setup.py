@@ -132,14 +132,14 @@ class FunctionsDropdown(discord.ui.Select):
         super().__init__(placeholder="Select which bot functions do you want to use ...", min_values=1, max_values=2, options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        config.online_notifications = False
-        config.vote_notifications = False
+        config.online_notification = False
+        config.vote_notification = False
 
         if "online" in self.values:
-            config.online_notifications = True
+            config.online_notification = True
             config.update_data("settings", "online_notifications", True)
         if "vote" in self.values:
-            config.vote_notifications = True
+            config.vote_notification = True
             config.update_data("settings", "vote_notifications", True)
 
         await self.parent_view.continue_callback(interaction)
@@ -262,11 +262,11 @@ class SetupView(discord.ui.View):
             self.add_item(RoleDropdown(parent_view=self, role_type="ONLINE_ROLE"))
 
         # --- Step 6: Vote Role ---
-        elif self.current_page == 6 and config.vote_notifications:
+        elif self.current_page == 6 and config.vote_notification:
             self.add_item(RoleDropdown(parent_view=self, role_type="VOTE_ROLE"))
 
         # --- Step 7: Timezone & Timing ---
-        elif self.current_page == 7 and config.vote_notifications:
+        elif self.current_page == 7 and config.vote_notification:
             self.add_item(TimezoneDropdown(parent_view=self))
 
             if self.vote_time:
@@ -298,10 +298,10 @@ class SetupView(discord.ui.View):
             await interaction.response.defer()
         self.current_page += 1
 
-        if self.current_page == 5 and not config.online_notifications:
+        if self.current_page == 5 and not config.online_notification:
             self.current_page += 1
 
-        if self.current_page == 6 and not config.vote_notifications:
+        if self.current_page == 6 and not config.vote_notification:
             self.current_page += 2
 
         self.create_page()
@@ -311,7 +311,7 @@ class SetupView(discord.ui.View):
             await interaction.edit_original_response(embed=next_embed, view=self)
 
         else:
-            if config.vote_notifications:
+            if config.vote_notification:
                 if config.TIMEZONE is None:
                     return await  interaction.followup.send("Please select your timezone before finishing setup.", ephemeral=True)
                 elif config.VOTE_TIME is None:
@@ -327,8 +327,8 @@ class SetupView(discord.ui.View):
                 description=(
                     f"Staff: {config.STAFF_ROLE.mention}"
                     f"\n\nServer: `{config.SERVER_NAME}`"
-                    f"\nOnline Notifications: `{config.online_notifications}`, {online_str}"
-                    f"\nVote Notifications: `{config.vote_notifications}`, {vote_str}"
+                    f"\nOnline Notifications: `{config.online_notification}`, {online_str}"
+                    f"\nVote Notifications: `{config.vote_notification}`, {vote_str}"
                     f"\n\nTimezone: `{config.TIMEZONE}`"
                     f"\nVote Timing: `{self.vote_time.strftime('%I:%M %p') if self.vote_time else 'N/A'}`"
                     f"\n\nThank you for choosing me!"),
@@ -398,14 +398,14 @@ class BotSetup(commands.Cog):
                 color=discord.Color.orange())
 
         elif embed_page == 5:
-            if config.online_notifications:
+            if config.online_notification:
                 return discord.Embed(
                     title="Step 5: MC server online notification role",
                     description="Which role can bot ping each time your Minecraft server goes online?",
                     color=discord.Color.orange()
                 )
 
-        elif config.vote_notifications:
+        elif config.vote_notification:
             if embed_page == 6:
                 return discord.Embed(
                     title="Step 6: Vote notification role",
@@ -459,8 +459,8 @@ class BotSetup(commands.Cog):
     async def data_test(self, interaction: discord.Interaction):
         output = (
             f"setup_completed: {config.setup_completed}"
-            f"\nonline_notifications: {config.online_notifications}"
-            f"\nvote_notifications: {config.vote_notifications}"
+            f"\nonline_notifications: {config.online_notification}"
+            f"\nvote_notifications: {config.vote_notification}"
             f"\nSERVER_NAME: {config.SERVER_NAME}"
             f"\nTIMEZONE: {config.TIMEZONE}"
             f"\nVOTE_TIME: {config.VOTE_TIME}"
