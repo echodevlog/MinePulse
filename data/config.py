@@ -27,6 +27,7 @@ online_notification_interval : int = 120 #(in seconds)
 vote_notification_interval : int = 24 #(in hours)
 TIMEZONE : str | None = None
 VOTE_TIME : datetime | None= None
+extra_server_info : bool = False # adds servers IP and platform
 
 # Minecraft variables
 SERVER_NAME : str | None = None

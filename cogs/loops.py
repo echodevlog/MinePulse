@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands, tasks
 
 from data import config
+from data.config import extra_server_info
+
 
 class Loops(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -12,14 +14,14 @@ class Loops(commands.Cog):
 
     @tasks.loop(seconds=config.online_notification_interval)
     async def sever_online_loop(self):
-        extra_server_info : str = ""
+        server_warning_info : str = ""
 
         if self.api_connections_cog:
             data = self.api_connections_cog.get_api_data()
 
             if data:
                 if not self.check_server_health(data):
-                    extra_server_info = "\n> **Please check your server's health. We detected that something might be wrong!**"
+                    server_warning_info = "\n> **Please check your server's health. We detected that something might be wrong!**"
 
 
                 name = data["server"]["name"]
@@ -28,14 +30,19 @@ class Loops(commands.Cog):
                 online = data["server"]["online"]
                 max_players = data["server"]["maxPlayers"]
                 player_count = data["server"]["playerCount"]
+                server_platform = data["server"]["platform"]
 
+                if config.extra_server_info:
+                    extra_server_info = f"\n\n> Join our server at **`{config.SERVER_NAME}.minehut.gg`** via **`{server_platform}`** edition!"
+                else:
+                    extra_server_info = ""
 
                 # Embed content
                 if online:
                     embed = discord.Embed(
                         title=f"{name} is currently ONLINE!",
                         description=f"> Current player count: **`{player_count}/{max_players}`**"
-                                    f"\n > Boosts: **`{boosts}`**" + extra_server_info,
+                                    f"\n > Boosts: **`{boosts}`**" + extra_server_info + server_warning_info,
                         color=discord.Color.green()
                     )
 
@@ -45,7 +52,7 @@ class Loops(commands.Cog):
 
                     embed = discord.Embed(
                         title=f"{name} is currently OFFLINE!",
-                        description=f"Last online on the day: **`{c_date}`**, for total of: **`{days} days, {hours} h, {minutes} min, {seconds} s`**" + extra_server_info,
+                        description=f"Last online on the day: **`{c_date}`**, for total of: **`{days} days, {hours} h, {minutes} min, {seconds} s`**" + extra_server_info + server_warning_info,
                         color=discord.Color.red()
                     )
 
