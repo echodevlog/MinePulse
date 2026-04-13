@@ -23,10 +23,11 @@ online_notification : bool = False
 vote_notification : bool = False
 
 # Public variables
-online_notification_interval : int = 120 #(in seconds)
-vote_notification_interval : int = 24 #(in hours)
+online_notification_interval : int = 120 # (in seconds)
+vote_notification_interval : int = 24 # (in hours)
 TIMEZONE : str | None = None
 VOTE_TIME : datetime | None= None
+
 extra_server_info : bool = False # adds servers IP and platform
 
 # Minecraft variables

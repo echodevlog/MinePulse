@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands, tasks
 
 from data import config
-from data.config import extra_server_info
 
 
 class Loops(commands.Cog):
@@ -20,7 +19,7 @@ class Loops(commands.Cog):
             data = self.api_connections_cog.get_api_data()
 
             if data:
-                if not self.check_server_health(data):
+                if not await self.check_server_health(data):
                     server_warning_info = "\n> **Please check your server's health. We detected that something might be wrong!**"
 
 
@@ -64,14 +63,18 @@ class Loops(commands.Cog):
                     if not self.initial_send or self.old_player_count < player_count:
                         await config.online_message.edit(content=config.ONLINE_ROLE.mention, embed=embed)
 
-
     @tasks.loop(hours=config.vote_notification_interval)
     async def vote_MH_loop(self):
-        pass
+        embed = discord.Embed(
+            title="Vote Reminded!",
+            description="Don't forget to vote for MineHut to earn free credits"
+                        "\n> [VOTE HERE!](https://findmcserver.com/server/minehut)",
+            color=discord.Color.blue()
+        )
 
-    def check_server_health(self, data):
-        print("check_server_health() is in progress")
+        await config.NOTIFICATIONS_CHANNEL.send(content=config.VOTE_ROLE.mention, embed=embed)
 
+    async def check_server_health(self, data):
         server_is_healthy : bool = True
         embed : discord.Embed | None = None
 
@@ -160,7 +163,7 @@ class Loops(commands.Cog):
             )
 
         if embed is not None and config.NOTIFICATIONS_CHANNEL is not None:
-            config.NOTIFICATIONS_CHANNEL.send(content=config.STAFF_ROLE.mention, embed=embed)
+            await config.NOTIFICATIONS_CHANNEL.send(content=config.STAFF_ROLE.mention, embed=embed)
             server_is_healthy = False
 
         return server_is_healthy
