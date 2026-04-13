@@ -137,8 +137,6 @@ class Loops(commands.Cog):
                             f"\n> Metadata last unflagged: **`{converted_last_unflagged}`**"
                             f"\n> Deletion completed: **`{deletion_completed}`**"
                             f"\n> Deletion completed at: **`{converted_dca}`**"
-                            f"\n> **`{deleted}`**"
-                            f"\n> **`{deleted}`**"
                             f"\n> Deleted: **`{deleted}`**",
                 color=discord.Color.red()
             )
@@ -169,12 +167,7 @@ class Loops(commands.Cog):
         return server_is_healthy
 
     def check_server_online(self, data):
-        online = data["server"]["online"]
-
-        if online:
-            return True
-        else:
-            return False
+        return data["server"]["online"]
 
 
 async def setup(bot: commands.Bot):
