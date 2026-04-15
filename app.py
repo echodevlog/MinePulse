@@ -2,9 +2,13 @@ import os
 import discord
 from discord.ext import commands
 
+from utils.data_manager import env_validation, create_data_file, read_data_file
+from utils.tools import start_loops
+
 from data import config
 
-config.load_env()
+
+env_validation()
 
 intents = discord.Intents.default()
 intents.guilds = True
@@ -33,21 +37,20 @@ async def sync():
 
 @bot.event
 async def on_ready():
-    config.set_bot(bot)
     await load_cogs()
 
-    if config.data_file[5:len(config.data_file)] not in os.listdir("data"):
+    if config.DATA_FILE[5:len(config.DATA_FILE)] not in os.listdir("data"):
         print("Data file not detected. Creating new one!")
-        config.create_data_file()
+        create_data_file()
     else:
         print("Data file detected. Extracting data!")
-        await config.read_data_file()
+        await read_data_file()
 
     print(f"\nLogged in as {bot.user} (ID: {bot.user.id})")
 
     if config.setup_completed:
         print("Starting all loops")
-        await config.start_loops()
+        await start_loops()
 
     await sync()
 
