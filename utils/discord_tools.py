@@ -1,7 +1,10 @@
 import discord
 from data import config
-from data.config import bot, guild, notifications_channel
 
+
+def set_bot_and_guild(obj_bot):
+    config.bot = obj_bot
+    config.guild = obj_bot.get_guild(config.GUILD_ID)
 
 def dc_embed_for_setup(embed_page: int):
     if embed_page == 0:
@@ -73,15 +76,15 @@ async def discord_object_converter(data_id : int | None):
     if data_id is None:
         return output_obj
 
-    if bot.get_channel(data_id):
-        output_obj = bot.get_channel(data_id)
+    if config.bot.get_channel(data_id):
+        output_obj = config.bot.get_channel(data_id)
 
-    elif guild.get_role(data_id) is not None:
-        output_obj = guild.get_role(data_id)
+    elif config.guild.get_role(data_id) is not None:
+        output_obj = config.guild.get_role(data_id)
 
-    elif notifications_channel:
+    elif config.notifications_channel:
         try:
-            output_obj = await notifications_channel.fetch_message(data_id)
+            output_obj = await config.notifications_channel.fetch_message(data_id)
         except discord.NotFound:
             pass
 

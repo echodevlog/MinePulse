@@ -41,6 +41,8 @@ def create_data_file():
         json.dump(default_data, file, indent=4)
 
 async def read_data_file():
+    # if any error happens ... delete data.json and create new one -> "Corrupted Data"
+
     global setup_completed, online_notification, vote_notification, SERVER_NAME, TIMEZONE, VOTE_TIME
     global NOTIFICATIONS_CHANNEL
     global STAFF_ROLE, ONLINE_ROLE, VOTE_ROLE

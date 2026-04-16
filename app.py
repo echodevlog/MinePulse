@@ -2,6 +2,7 @@ import os
 import discord
 from discord.ext import commands
 
+from utils.discord_tools import set_bot_and_guild
 from utils.data_manager import env_validation, create_data_file, read_data_file
 from utils.tools import start_loops
 
@@ -38,6 +39,7 @@ async def sync():
 @bot.event
 async def on_ready():
     await load_cogs()
+    set_bot_and_guild(bot)
 
     if config.DATA_FILE[5:len(config.DATA_FILE)] not in os.listdir("data"):
         print("Data file not detected. Creating new one!")
