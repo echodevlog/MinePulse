@@ -30,15 +30,15 @@ async def load_cogs():
                 print(f"Failed to load {extension}: {e}")
 
 async def sync():
+    print("\nSyncing slash commands ...")
     synced = await (bot.tree.sync(guild=guild))
-    print(f"\nSynced {len(synced)} commands to guild {guild.id}")
+    print(f"Synced {len(synced)} commands to guild {guild.id}")
 
     for command in synced:
         print(f"{command.name}")
 
 @bot.event
 async def on_ready():
-    await load_cogs()
     set_bot_and_guild(bot)
 
     if config.DATA_FILE[5:len(config.DATA_FILE)] not in os.listdir("data"):
@@ -50,8 +50,10 @@ async def on_ready():
 
     print(f"\nLogged in as {bot.user} (ID: {bot.user.id})")
 
+    await load_cogs()
+
     if config.setup_completed:
-        print("Starting all loops")
+        print("\nStarting all loops")
         await start_loops()
 
     await sync()

@@ -152,20 +152,28 @@ class TimezoneDropdown(discord.ui.Select):
         self.parent_view = parent_view
 
         options = [
+            # America
+            discord.SelectOption(label="Eastern Time (NY / Toronto)", value="America/New_York"),
+            discord.SelectOption(label="Central Time (Chicago / Mexico City)", value="America/Chicago"),
+            discord.SelectOption(label="Mountain Time (Denver)", value="America/Denver"),
+            discord.SelectOption(label="Pacific Time (LA / Vancouver)", value="America/Los_Angeles"),
+            discord.SelectOption(label="Atlantic Time (Halifax)", value="America/Halifax"),
+
+            # Europe & Africa
+            discord.SelectOption(label="Western European (London / Lisbon)", value="Europe/London"),
+            discord.SelectOption(label="Central European (Paris / Berlin / Ljubljana)", value="Europe/Paris"),
+            discord.SelectOption(label="Eastern European (Athens / Cairo)", value="Europe/Athens"),
+            discord.SelectOption(label="Moscow Time", value="Europe/Moscow"),
+
+            # Asia
+            discord.SelectOption(label="India Standard Time", value="Asia/Kolkata"),
+            discord.SelectOption(label="Singapore / Hong Kong", value="Asia/Singapore"),
+            discord.SelectOption(label="Japan / Korea Standard Time", value="Asia/Tokyo"),
+            discord.SelectOption(label="Australian Eastern (Sydney)", value="Australia/Sydney"),
+            discord.SelectOption(label="New Zealand (Auckland)", value="Pacific/Auckland"),
+
+            # Universal
             discord.SelectOption(label="UTC / GMT", value="UTC"),
-            discord.SelectOption(label="EST (New York / Toronto)", value="America/New_York"),
-            discord.SelectOption(label="CST (Chicago / Mexico City)", value="America/Chicago"),
-            discord.SelectOption(label="MST (Denver)", value="America/Denver"),
-            discord.SelectOption(label="PST (Los Angeles / Vancouver)", value="America/Los_Angeles"),
-            discord.SelectOption(label="GMT (London / Dublin)", value="Europe/London"),
-            discord.SelectOption(label="CET (Paris / Berlin / Rome)", value="Europe/Paris"),
-            discord.SelectOption(label="EET (Athens / Cairo)", value="Europe/Athens"),
-            discord.SelectOption(label="MSK (Moscow)", value="Europe/Moscow"),
-            discord.SelectOption(label="IST (India)", value="Asia/Kolkata"),
-            discord.SelectOption(label="SGT (Singapore)", value="Asia/Singapore"),
-            discord.SelectOption(label="JST (Tokyo)", value="Asia/Tokyo"),
-            discord.SelectOption(label="AEST (Sydney / Melbourne)", value="Australia/Sydney"),
-            discord.SelectOption(label="NZST (Auckland)", value="Pacific/Auckland"),
         ]
 
         super().__init__(placeholder="Select your server's timezone...", min_values=1, max_values=1, options=options)

@@ -21,17 +21,18 @@ def date_conversion(milliseconds : int):
 
     return readable_date
 
-async def start_loops(bot):
-    loops_cog = bot.get_cog("Loops")
+def get_current_datetime():
+    current_datetime = datetime.now(config.timezone)
+    return current_datetime
+
+async def start_loops():
+    loops_cog = config.bot.get_cog("Loops")
 
     if loops_cog:
         if config.online_notification:
             loops_cog.sever_online_loop.start()
             print("Starting online loop")
 
-        elif config.vote_notification:
+        if config.vote_notification:
             loops_cog.vote_MH_loop.start()
             print("Starting vote loop")
-
-        else:
-            print("No loops activated")

@@ -19,8 +19,14 @@ async def check_server_health(data):
     deletion_started = data["server"]["deletion"]["started"]
     deletion_started_at = data["server"]["deletion"]["started_at"]
     deletion_reason = data["server"]["deletion"]["reason"]
-    deletion_metadata_description = data["server"]["deletion"]["metadata"]["description"]
-    deletion_metadata_last_unflagged = data["server"]["deletion"]["metadata"]["last_unflagged"]
+
+    try:
+        deletion_metadata_description = data["server"]["deletion"]["metadata"]["description"]
+        deletion_metadata_last_unflagged = data["server"]["deletion"]["metadata"]["last_unflagged"]
+    except KeyError as e:
+        deletion_metadata_description = "No information provided"
+        deletion_metadata_last_unflagged = "No information provided"
+
     deletion_completed = data["server"]["deletion"]["completed"]
     deletion_completed_at = data["server"]["deletion"]["completed_at"]
 
@@ -95,7 +101,6 @@ async def check_server_health(data):
         server_is_healthy = False
 
     return server_is_healthy
-
 
 def check_server_online(data):
     return data["server"]["online"]

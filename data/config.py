@@ -28,7 +28,7 @@ vote_notification : bool = False
 ONLINE_NOTIFICATION_INTERVAL : int = 120 # (in seconds)
 VOTE_NOTIFICATION_INTERVAL : int = 24 # (in hours)
 timezone : str | None = None
-vote_time : datetime | None= None
+vote_time : datetime | None = None
 
 EXTRA_SERVER_INFO : bool = False # adds servers IP and platform to online notification message
 
