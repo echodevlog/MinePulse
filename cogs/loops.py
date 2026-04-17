@@ -1,10 +1,12 @@
+from multiprocessing.spawn import old_main_modules
+
 import discord
 from discord.ext import commands, tasks
 
 from utils.api_calls import get_api_data
 from utils.data_manager import update_data
 from utils.tools import time_conversion
-from utils.health import check_server_health
+from utils.health import check_server_health, check_server_online
 
 from data import config
 
@@ -14,6 +16,7 @@ class Loops(commands.Cog):
         self.bot = bot
         self.api_connections_cog = self.bot.get_cog("APIConnections")
         self.old_player_count = 0
+        self.old_state = False
         self.initial_send = False
 
     @tasks.loop(seconds=config.ONLINE_NOTIFICATION_INTERVAL)
@@ -50,21 +53,47 @@ class Loops(commands.Cog):
 
             else:
                 c_date, time = list(daily_online_time.items())[0]
+                date_str = c_date.replace("-", " ")
                 days, hours, minutes, seconds = time_conversion(time)
 
                 embed = discord.Embed(
                     title=f"{name} is currently OFFLINE!",
-                    description=f"Last online on the day: **`{c_date}`**, for total of: **`{days} days, {hours} h, {minutes} min, {seconds} s`**" + extra_server_info + server_warning_info,
+                    description=f"Last online on the day: **`{date_str}`**, for total of: **`{days} days, {hours} h, {minutes} min, {seconds} s`**" + extra_server_info + server_warning_info,
                     color=discord.Color.red()
                 )
 
             # Sending embed
-            if config.online_message is None:
+            # true        true      false => server just got online
+            if online and online != self.old_state:
+                if config.online_message: await config.online_message.delete()
                 config.online_message = await config.notifications_channel.send(content=config.online_role.mention, embed=embed)
                 update_data("messages", "online_message_id", config.online_message.id)
-            else:
-                if not self.initial_send or self.old_player_count < player_count:
+
+            #    true       true      true => server was online in the previous check as well => check if player count changed
+            elif online and online == self.old_state:
+                if player_count != self.old_player_count:
                     await config.online_message.edit(content=config.online_role.mention, embed=embed)
+
+            #     false            false        true => server just got offline
+            elif not online and not online != self.old_state:
+                if config.online_message:
+                    await config.online_message.edit(content=config.online_role.mention, embed=embed)
+                else:
+                    config.online_message = await config.notifications_channel.send(content=config.online_role.mention, embed=embed)
+                    update_data("messages", "online_message_id", config.online_message.id)
+
+            #      false          false        false => server was offline in the previous check as well
+            elif not online and not online == self.old_state and not self.initial_send:
+                if config.online_message:
+                    await config.online_message.edit(content=config.online_role.mention, embed=embed)
+                else:
+                    config.online_message = await config.notifications_channel.send(content=config.online_role.mention, embed=embed)
+                    update_data("messages", "online_message_id", config.online_message.id)
+                self.initial_send = True
+
+            self.old_state = online
+            self.old_player_count = player_count
+
 
     @tasks.loop(time=config.vote_time.replace(tzinfo=config.timezone))
     async def vote_MH_loop(self):
