@@ -37,7 +37,7 @@ ___
 ## Staff commands
 `/bot state` - MineHut connectivity information
 
-`/bot logs` - All bot logs
+`/bot log` - All bot logs
 
 ## User commands
 `/about` - Short information about MinePulse
