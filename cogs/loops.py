@@ -5,7 +5,7 @@ from discord.ext import commands, tasks
 
 from utils.api_calls import get_api_data
 from utils.data_manager import update_data
-from utils.tools import time_conversion
+from utils.tools import time_conversion, get_current_datetime
 from utils.health import check_server_health, check_server_online
 
 from data import config
@@ -21,7 +21,7 @@ class Loops(commands.Cog):
 
     @tasks.loop(seconds=config.ONLINE_NOTIFICATION_INTERVAL)
     async def sever_online_loop(self):
-        server_warning_info : str = ""
+        server_warning_info : str = "\nSeems like server is behaving normally."
 
         data = await get_api_data()
 
@@ -52,13 +52,16 @@ class Loops(commands.Cog):
                 )
 
             else:
+                server_warning_info = ""
                 c_date, time = list(daily_online_time.items())[0]
                 date_str = c_date.replace("-", " ")
                 days, hours, minutes, seconds = time_conversion(time)
+                current_time = get_current_datetime()
 
                 embed = discord.Embed(
                     title=f"{name} is currently OFFLINE!",
-                    description=f"Last online on the day: **`{date_str}`**, for total of: **`{days} days, {hours} h, {minutes} min, {seconds} s`**" + extra_server_info + server_warning_info,
+                    description=f"Last online on the day: **`{date_str}`**, for total of: **`{days} days, {hours} h, {minutes} min, {seconds} s`**"
+                                f"\nAt: **`{current_time.time().strftime("%HH:%MM")}`**" + extra_server_info + server_warning_info,
                     color=discord.Color.red()
                 )
 

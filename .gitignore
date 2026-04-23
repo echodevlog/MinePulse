@@ -8,7 +8,7 @@ ENV/
 
 # Ignore local data/log files
 data/data.json
-data/logs.txt
+data/bot.log
 *.json
 __pycache__/
 

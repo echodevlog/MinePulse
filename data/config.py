@@ -18,7 +18,7 @@ guild : discord.Object | None = None
 
 # File paths
 DATA_FILE = "data/data.json"
-LOGS_FILE = "data/logs.txt"
+LOG_FILE = "data/bot.log"
 
 # Enabled functions
 online_notification : bool = False

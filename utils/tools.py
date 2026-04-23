@@ -26,13 +26,15 @@ def get_current_datetime():
     return current_datetime
 
 async def start_loops():
+    from utils.data_manager import add_log
+
     loops_cog = config.bot.get_cog("Loops")
 
     if loops_cog:
         if config.online_notification:
             loops_cog.sever_online_loop.start()
-            print("Starting online loop")
+            add_log("Online loop started.")
 
         if config.vote_notification:
             loops_cog.vote_MH_loop.start()
-            print("Starting vote loop")
+            add_log("Vote loop started.")

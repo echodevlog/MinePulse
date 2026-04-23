@@ -10,7 +10,6 @@ async def check_server_health(data):
 
     online = data["server"]["online"]
 
-    visibility = data["server"]["visibility"]
     suspended = data["server"]["suspended"]
     expired = data["server"]["expired"]
 
@@ -36,16 +35,7 @@ async def check_server_health(data):
     deletion_storage_completed = data["server"]["deletion"]["storage_completed"]
     deletion_storage_completed_at = data["server"]["deletion"]["storage_completed_at"]
 
-    if not visibility and online:
-        embed = discord.Embed(
-            title="⚠️ Server is currently not VISIBLE!",
-            description=f"We detected that your server is currently **not visible** on MineHut"
-                        f"\n> Visibility: **`{visibility}`**"
-                        f"\n> Online?: **`{online}`**",
-            color=discord.Color.orange()
-        )
-
-    elif suspended:
+    if suspended:
         embed = discord.Embed(
             title="❌ Server is SUSPENED!",
             description=f"We detected that your server is currently **suspended** on MineHut"
