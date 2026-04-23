@@ -1,5 +1,3 @@
-from multiprocessing.spawn import old_main_modules
-
 import discord
 from discord.ext import commands, tasks
 
@@ -21,6 +19,10 @@ class Loops(commands.Cog):
 
     @tasks.loop(seconds=config.ONLINE_NOTIFICATION_INTERVAL)
     async def sever_online_loop(self):
+        if not config.online_notification:
+            self.sever_online_loop.stop()
+            return
+
         server_warning_info : str = "\nSeems like server is behaving normally."
 
         data = await get_api_data()
@@ -100,6 +102,10 @@ class Loops(commands.Cog):
 
     @tasks.loop(time=config.vote_time.replace(tzinfo=config.timezone))
     async def vote_MH_loop(self):
+        if not config.vote_notification:
+            self.vote_MH_loop.stop()
+            return
+
         embed = discord.Embed(
             title="Vote Reminded!",
             description="Don't forget to vote for MineHut to earn free credits!"

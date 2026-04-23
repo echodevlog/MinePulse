@@ -4,7 +4,7 @@ from discord.ext import commands
 
 from utils.discord_tools import set_bot_and_guild
 from utils.data_manager import env_validation, create_data_file, read_data_file, create_log_file, add_log
-from utils.tools import start_loops
+from utils.tools import start_loops, get_current_datetime
 
 from data import config
 
@@ -20,6 +20,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 guild = discord.Object(id=config.GUILD_ID)
 
 async def load_cogs():
+    add_log("\n=== Loading Cogs ===")
     for filename in os.listdir("cogs"):
         if filename.endswith(".py"):
             extension = f"cogs.{filename[:-3]}"
@@ -30,7 +31,7 @@ async def load_cogs():
                 add_log(f"Failed to load {extension}: {e}")
 
 async def sync():
-    add_log("\nSyncing slash commands ...")
+    add_log("\n=== Syncing Slash Commands ===")
     synced = await (bot.tree.sync(guild=guild))
     add_log(f"Synced {len(synced)} commands to guild {guild.id}")
 
@@ -52,11 +53,13 @@ async def on_ready():
     add_log(f"\nLogged in as {bot.user} (ID: {bot.user.id})")
 
     await load_cogs()
+    await sync()
 
     if config.setup_completed:
-        add_log("\nStarting all loops")
+        add_log("\n=== Starting all loops ===")
         await start_loops()
 
-    await sync()
+    config.bot_startup_time = get_current_datetime()
+
 
 bot.run(config.BOT_TOKEN)

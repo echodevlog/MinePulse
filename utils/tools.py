@@ -1,3 +1,4 @@
+from discord.ext import tasks
 from datetime import datetime
 
 from data import config
@@ -32,9 +33,15 @@ async def start_loops():
 
     if loops_cog:
         if config.online_notification:
-            loops_cog.sever_online_loop.start()
-            add_log("Online loop started.")
+            try:
+                loops_cog.sever_online_loop.start()
+                add_log("Online loop started.")
+            except tasks.LoopAlreadyRunning as e:
+                return
 
         if config.vote_notification:
-            loops_cog.vote_MH_loop.start()
-            add_log("Vote loop started.")
+            try:
+                loops_cog.vote_MH_loop.start()
+                add_log("Vote loop started.")
+            except tasks.LoopAlreadyRunning as e:
+                return

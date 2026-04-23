@@ -360,6 +360,8 @@ class BotSetup(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    stop = app_commands.Group(name="stop", description="Stop notifications", guild_ids=[config.GUILD_ID])
+    start = app_commands.Group(name="start", description="Activate notifications", guild_ids=[config.GUILD_ID])
     change = app_commands.Group(name="change", description="Change settings", guild_ids=[config.GUILD_ID])
     server = app_commands.Group(name="server", description="Server related commands", guild_ids=[config.GUILD_ID], parent=change)
     vote = app_commands.Group(name="vote", description="Vote related commands", guild_ids=[config.GUILD_ID], parent=change)
@@ -395,112 +397,145 @@ class BotSetup(commands.Cog):
 
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-    @app_commands.command(name="data-test", description="Test function for data readability")
-    @app_commands.guilds(config.GUILD_ID)
-    async def data_test(self, interaction: discord.Interaction):
-        output = (
-            f"setup_completed: {config.setup_completed}"
-            f"\nonline_notifications: {config.online_notification}"
-            f"\nvote_notifications: {config.vote_notification}"
-            f"\nSERVER_NAME: {config.server_name}"
-            f"\nTIMEZONE: {config.timezone}"
-            f"\nVOTE_TIME: {config.vote_time}"
-            f"\nNOTIFICATIONS_CHANNEL: {config.notifications_channel}"
-            f"\nSTAFF_ROLE: {config.staff_role}"
-            f"\nONLINE_ROLE: {config.online_role}"
-            f"\nVOTE_ROLE: {config.vote_role}"
-            f"\nonline_message: {config.online_message}"
-            f"\nvote_message: {config.vote_message}"
-        )
-        await interaction.response.send_message(output)
+    @stop.command(name="online-notification", description="Stop notifying when MC server goes online.")
+    async def stop_online_notification(self, interaction: discord.Interaction):
+        if not config.setup_completed:
+            return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+
+        if config.staff_role not in interaction.user.roles:
+            await interaction.response.send_message("You don't have permission to use this command!", ephemeral=True)
+            return
+
+        if not config.online_notification:
+            await interaction.response.send_message("Online notification is already deactivated. Use `/start online-notification` if you want to activate it back.", ephemeral=True)
+            return
+
+        config.online_notification = False
+        await interaction.response.send_message("Online notification is deactivated. Use `/start online-notification` if you want to activate it back.", ephemeral=True)
+
+    @stop.command(name="vote-notification", description="Stop sending vote for MH notification.")
+    async def stop_vote_notification(self, interaction: discord.Interaction):
+        if not config.setup_completed:
+            return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+
+        if config.staff_role not in interaction.user.roles:
+            await interaction.response.send_message("You don't have permission to use this command!", ephemeral=True)
+            return
+
+        if not config.vote_notification:
+            await interaction.response.send_message("Vote notification is already deactivated. Use `/start vote-notification` if you want to activate it back.", ephemeral=True)
+            return
+
+        config.vote_notification = False
+        await interaction.response.send_message("Vote notification is deactivated. Use `/start vote-notification` if you want to activate it back.", ephemeral=True)
+
+    @start.command(name="online-notification", description="Activate vote for MH notification.")
+    async def start_online_notification(self, interaction: discord.Interaction):
+        if not config.setup_completed:
+            return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+
+        if config.staff_role not in interaction.user.roles:
+            await interaction.response.send_message("You don't have permission to use this command!", ephemeral=True)
+            return
+
+        if config.online_notification:
+            await interaction.response.send_message("Online notification is already active. Use `/stop online-notification` if you want to deactivate it.", ephemeral=True)
+            return
+
+        config.online_notification = True
+        start_loops()
+        await interaction.response.send_message("Online notification is active. Use `/stop online-notification` if you want to deactivate it.", ephemeral=True)
+
+    @start.command(name="vote-notification", description="Activate vote for MH notification.")
+    async def start_vote_notification(self, interaction: discord.Interaction):
+        if not config.setup_completed:
+            return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+
+        if config.staff_role not in interaction.user.roles:
+            await interaction.response.send_message("You don't have permission to use this command!", ephemeral=True)
+            return
+
+        if config.vote_notification:
+            await interaction.response.send_message("Vote notification is already active. Use `/stop vote-notification` if you want to deactivate it.", ephemeral=True)
+            return
+
+        config.vote_notification = True
+        start_loops()
+        await interaction.response.send_message("Vote notification is active. Use `/stop vote-notification` if you want to deactivate it.", ephemeral=True)
 
     @server.command(name="name", description="Change server name setting")
     async def change_server_name(self, interaction: discord.Interaction):
-        if config.staff_role is not None:
-            if config.staff_role not in interaction.user.roles:
-                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+        if not config.setup_completed:
+            return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
 
-        else:
-            if not config.setup_completed:
-                return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+        if config.staff_role not in interaction.user.roles:
+            return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
 
         modal = MineHutModal(self)
         return await interaction.response.send_modal(modal)
 
     @vote.command(name="timezone", description="Change vote timezone setting")
     async def change_vote_timezone(self, interaction: discord.Interaction):
-        if config.staff_role is not None:
-            if config.staff_role not in interaction.user.roles:
-                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+        if not config.setup_completed:
+            return await interaction.response.send_message( "It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
 
-        else:
-            if not config.setup_completed:
-                return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+        if config.staff_role not in interaction.user.roles:
+            return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
 
         view = TimezoneDropdownStandalone(self)
         return await interaction.response.send_message(f"Please select your new timezone:", view=view, ephemeral=True)
 
     @vote.command(name="timing", description="Change vote timing setting")
     async def change_vote_timing(self, interaction: discord.Interaction):
-        if config.staff_role is not None:
-            if config.staff_role not in interaction.user.roles:
-                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+        if not config.setup_completed:
+            return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
 
-        else:
-            if not config.setup_completed:
-                return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+        if config.staff_role not in interaction.user.roles:
+            return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
 
         modal = TimeModal(self)
         return await interaction.response.send_modal(modal)
 
     @staff.command(name="role", description="Change staff role setting")
     async def change_staff_role(self, interaction: discord.Interaction):
-        if config.staff_role is not None:
-            if config.staff_role not in interaction.user.roles:
-                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+        if not config.setup_completed:
+            return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
 
-        else:
-            if not config.setup_completed:
-                return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+        if config.staff_role not in interaction.user.roles:
+            return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
 
         view = RoleDropdownStandAlone(self, "STAFF_ROLE")
         return await interaction.response.send_message(f"Please select your new staff role (**DISCLAIMER: Please note that all staff commands won't be available to be used from current staff role. Make sure you have a new role applied!**):", view=view, ephemeral=True)
 
     @online.command(name="role", description="Change online role setting")
     async def change_online_role(self, interaction: discord.Interaction):
-        if config.online_role is not None:
-            if config.online_role not in interaction.user.roles:
-                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+        if not config.setup_completed:
+            return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
 
-        else:
-            if not config.setup_completed:
-                return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+        if config.online_role not in interaction.user.roles:
+            return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
 
         view = RoleDropdownStandAlone(self, "ONLINE_ROLE")
         return await interaction.response.send_message(f"Please select your new online notification role:", view=view, ephemeral=True)
 
     @vote.command(name="role", description="Change vote role setting")
     async def change_vote_role(self, interaction: discord.Interaction):
-        if config.vote_role is not None:
-            if config.vote_role not in interaction.user.roles:
-                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+        if not config.setup_completed:
+            return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
 
-        else:
-            if not config.setup_completed:
-                return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+        if config.vote_role not in interaction.user.roles:
+            return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
 
         view = RoleDropdownStandAlone(self, "VOTE_ROLE")
         return await interaction.response.send_message(f"Please select your new vote notification role:", view=view, ephemeral=True)
 
     @notification.command(name="channel", description="Change notification channel setting")
     async def change_notification_channel(self, interaction: discord.Interaction):
-        if config.vote_role is not None:
-            if config.vote_role not in interaction.user.roles:
-                return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
+        if not config.setup_completed:
+            return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
 
-        else:
-            if not config.setup_completed:
-                return await interaction.response.send_message("It seems like you haven't made initial setup for this bot. Please use `/setup` function", ephemeral=True)
+        if config.vote_role not in interaction.user.roles:
+            return await interaction.response.send_message("You don't have permission to use this function!", ephemeral=True)
 
         view = ChannelDropdownStandAlone(self)
         return await interaction.response.send_message(f"please select your new notification channel:", view=view, ephemeral=True)

@@ -13,9 +13,14 @@ ___
 `/setup` - Initial command. Run it when the bot first joins your server. It will take you through easy bot setup.
 
 ## Changing settings
-`/stop online notifications`
 
-`/stop vote notifications`
+`/start online-notifications`
+
+`/start vote-notifications`
+
+`/stop online-notifications`
+
+`/stop vote-notifications`
 
 `/change server name`
 
