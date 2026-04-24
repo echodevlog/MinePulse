@@ -1,3 +1,5 @@
+from zoneinfo import ZoneInfo
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -180,7 +182,7 @@ class TimezoneDropdown(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         selected_timezone = self.values[0]
-        config.timezone = selected_timezone
+        config.timezone = ZoneInfo(selected_timezone)
         update_data("settings", "timezone", selected_timezone)
 
         for option in self.options:
@@ -346,7 +348,7 @@ class SetupView(discord.ui.View):
             await interaction.edit_original_response(embed=embed, view=self)
             config.setup_completed = True
             update_data("settings", "setup_completed", True)
-            await start_loops(self.cog.bot)
+            await start_loops()
             self.stop()
 
     async def open_name_modal_callback(self, interaction: discord.Interaction):
@@ -539,6 +541,7 @@ class BotSetup(commands.Cog):
 
         view = ChannelDropdownStandAlone(self)
         return await interaction.response.send_message(f"please select your new notification channel:", view=view, ephemeral=True)
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(BotSetup(bot))

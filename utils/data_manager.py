@@ -7,7 +7,7 @@ from utils.discord_tools import discord_object_converter
 from data import config
 from utils.tools import get_current_datetime
 
-
+# === .env Functions ===
 def env_validation():
     if not config.BOT_TOKEN:
         raise ValueError(f"❌ CRITICAL ERROR: Your BOT_TOKEN is missing from the .env file!")
@@ -15,6 +15,7 @@ def env_validation():
         raise ValueError(f"❌ CRITICAL ERROR: Your GUILD_ID is missing from the .env file!")
 
 
+# === Data Functions ===
 def create_data_file():
     if config.DATA_FILE[5:len(config.DATA_FILE)] not in os.listdir("data"):
         default_data = {
@@ -53,8 +54,16 @@ async def read_data_file():
             config.online_notification = saved_data["settings"]["online_notifications"]
             config.vote_notification = saved_data["settings"]["vote_notifications"]
             config.server_name = saved_data["settings"]["server_name"]
-            config.timezone = ZoneInfo(saved_data["settings"]["timezone"])
-            config.vote_time = datetime.strptime(saved_data["settings"]["vote_time"], "%H:%M:%S").time()
+
+            if saved_data["settings"]["timezone"] is None:
+                config.timezone = None
+            else:
+                config.timezone = ZoneInfo(saved_data["settings"]["timezone"])
+
+            if saved_data["settings"]["vote_time"] is None:
+                config.vote_time = None
+            else:
+                config.vote_time = datetime.strptime(saved_data["settings"]["vote_time"], "%H:%M:%S").time()
 
             # Text Channels
             config.notifications_channel = await discord_object_converter(saved_data["text_channels"]["notification_channel_id"])
@@ -68,9 +77,9 @@ async def read_data_file():
             config.online_message = await discord_object_converter(saved_data["messages"]["online_message_id"])
             config.vote_message = await discord_object_converter(saved_data["messages"]["vote_message_id"])
 
-    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
-        add_log(f"⚠️ Data file corrupted or missing ({e}). Creating new data file ...")
+            return True
 
+    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
         if config.notifications_channel:
             await config.notifications_channel.send("⚠️ My data file was corrupted or missing. I'm creating a new one. Please go through a new setup process using `/setup`.")
 
@@ -79,6 +88,8 @@ async def read_data_file():
 
         create_data_file()
         config.setup_completed = False
+
+        return False
 
 def update_data(search_type : str, search : str, data : int | None | bool | str):
     with open(config.DATA_FILE, "r") as file:
@@ -90,12 +101,11 @@ def update_data(search_type : str, search : str, data : int | None | bool | str)
         json.dump(file_data, file, indent=4)
 
 
-
-# === Logs Functions ===
+# === Log Functions ===
 def create_log_file():
-    print("Creating log file.")
     with open(config.LOG_FILE, "w") as log_file:
         log_file.write(f"====== {config.BOT_NAME} ======")
+    add_log("Log file created.")
 
 def add_log(log_str):
     if os.path.exists(config.LOG_FILE):
@@ -108,7 +118,7 @@ def add_log(log_str):
 
         write_str = write_str + time + " " +  log_str
 
-        with open(config.LOG_FILE, "a") as log_file:
+        with open(config.LOG_FILE, "a", encoding="utf-8") as log_file:
             log_file.write("\n" + write_str)
 
         print(write_str)

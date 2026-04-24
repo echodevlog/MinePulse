@@ -1,10 +1,11 @@
 import discord
 from discord.ext import commands, tasks
+from datetime import datetime, time
 
 from utils.api_calls import get_api_data
 from utils.data_manager import update_data
 from utils.tools import time_conversion, get_current_datetime
-from utils.health import check_server_health, check_server_online
+from utils.health import check_server_health
 
 from data import config
 
@@ -19,6 +20,9 @@ class Loops(commands.Cog):
 
     @tasks.loop(seconds=config.ONLINE_NOTIFICATION_INTERVAL)
     async def sever_online_loop(self):
+        if not config.setup_completed:
+            return
+
         if not config.online_notification:
             self.sever_online_loop.stop()
             return
@@ -63,7 +67,7 @@ class Loops(commands.Cog):
                 embed = discord.Embed(
                     title=f"{name} is currently OFFLINE!",
                     description=f"Last online on the day: **`{date_str}`**, for total of: **`{days} days, {hours} h, {minutes} min, {seconds} s`**"
-                                f"\nAt: **`{current_time.time().strftime("%HH:%MM")}`**" + extra_server_info + server_warning_info,
+                                f"\nAt: **`{current_time.time().strftime("%H:%M")}`**" + extra_server_info + server_warning_info,
                     color=discord.Color.red()
                 )
 
@@ -100,8 +104,11 @@ class Loops(commands.Cog):
             self.old_player_count = player_count
 
 
-    @tasks.loop(time=config.vote_time.replace(tzinfo=config.timezone))
+    @tasks.loop(time=datetime.combine(datetime.today(), time(0, 0)).time())
     async def vote_MH_loop(self):
+        if not config.setup_completed:
+            return
+
         if not config.vote_notification:
             self.vote_MH_loop.stop()
             return

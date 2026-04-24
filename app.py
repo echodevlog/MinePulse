@@ -10,6 +10,7 @@ from data import config
 
 
 env_validation()
+create_log_file() # new log file every new session
 
 intents = discord.Intents.default()
 intents.guilds = True
@@ -43,13 +44,14 @@ async def on_ready():
     set_bot_and_guild(bot)
 
     if os.path.exists(config.DATA_FILE):
-        print("Data file detected. Extracting data!")
-        await read_data_file()
+        add_log("Data file detected. Extracting data!")
+        if not await read_data_file():
+            add_log("Data extraction failed! Trying again")
+            await read_data_file()
     else:
-        print("Data file not detected. Creating new one!")
+        add_log("Data file not detected. Creating new one!")
         create_data_file()
 
-    create_log_file() # new log file every new session
     add_log(f"\nLogged in as {bot.user} (ID: {bot.user.id})")
 
     await load_cogs()
