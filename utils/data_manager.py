@@ -44,30 +44,41 @@ def create_data_file():
             json.dump(default_data, data_file, indent=4)
 
 async def read_data_file():
-    # if any error happens ... delete data.json and create new one -> "Corrupted Data"
+    try:
+        with open(config.DATA_FILE, "r") as file:
+            saved_data = json.load(file)
 
-    with open(config.DATA_FILE, "r") as file:
-        saved_data = json.load(file)
+            # Settings
+            config.setup_completed = saved_data["settings"]["setup_completed"]
+            config.online_notification = saved_data["settings"]["online_notifications"]
+            config.vote_notification = saved_data["settings"]["vote_notifications"]
+            config.server_name = saved_data["settings"]["server_name"]
+            config.timezone = ZoneInfo(saved_data["settings"]["timezone"])
+            config.vote_time = datetime.strptime(saved_data["settings"]["vote_time"], "%H:%M:%S").time()
 
-        # Settings
-        config.setup_completed = saved_data["settings"]["setup_completed"]
-        config.online_notification = saved_data["settings"]["online_notifications"]
-        config.vote_notification = saved_data["settings"]["vote_notifications"]
-        config.server_name = saved_data["settings"]["server_name"]
-        config.timezone = ZoneInfo(saved_data["settings"]["timezone"])
-        config.vote_time = datetime.strptime(saved_data["settings"]["vote_time"], "%H:%M:%S").time()
+            # Text Channels
+            config.notifications_channel = await discord_object_converter(saved_data["text_channels"]["notification_channel_id"])
 
-        # Text Channels
-        config.notifications_channel = await discord_object_converter(saved_data["text_channels"]["notification_channel_id"])
+            # Roles
+            config.staff_role = await discord_object_converter(saved_data["roles"]["staff_role_id"])
+            config.online_role = await discord_object_converter(saved_data["roles"]["online_role_id"])
+            config.vote_role = await discord_object_converter(saved_data["roles"]["vote_role_id"])
 
-        # Roles
-        config.staff_role = await discord_object_converter(saved_data["roles"]["staff_role_id"])
-        config.online_role = await discord_object_converter(saved_data["roles"]["online_role_id"])
-        config.vote_role = await discord_object_converter(saved_data["roles"]["vote_role_id"])
+            # Messages
+            config.online_message = await discord_object_converter(saved_data["messages"]["online_message_id"])
+            config.vote_message = await discord_object_converter(saved_data["messages"]["vote_message_id"])
 
-        # Messages
-        config.online_message = await discord_object_converter(saved_data["messages"]["online_message_id"])
-        config.vote_message = await discord_object_converter(saved_data["messages"]["vote_message_id"])
+    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+        add_log(f"⚠️ Data file corrupted or missing ({e}). Creating new data file ...")
+
+        if config.notifications_channel:
+            await config.notifications_channel.send("⚠️ My data file was corrupted or missing. I'm creating a new one. Please go through a new setup process using `/setup`.")
+
+        if os.path.exists(config.DATA_FILE):
+            os.remove(config.DATA_FILE)
+
+        create_data_file()
+        config.setup_completed = False
 
 def update_data(search_type : str, search : str, data : int | None | bool | str):
     with open(config.DATA_FILE, "r") as file:
