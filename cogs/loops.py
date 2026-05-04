@@ -36,12 +36,16 @@ class Loops(commands.Cog):
                 server_warning_info = "\n> **Please check your server's health. We detected that something might be wrong!**"
 
             name = data["server"]["name"]
-            daily_online_time = data["server"]["daily_online_time"]
             boosts = data["server"]["boosts"]
             online = data["server"]["online"]
             max_players = data["server"]["maxPlayers"]
             player_count = data["server"]["playerCount"]
             server_platform = data["server"]["platform"]
+
+            if data.get("server").get("daily_online_time"):
+                daily_online_time = data["server"]["daily_online_time"]
+            else:
+                daily_online_time = None
 
             if config.EXTRA_SERVER_INFO:
                 extra_server_info = f"\n\n> Join our server at **`{config.server_name}.minehut.gg`** via **`{server_platform}`** edition!"
@@ -58,15 +62,20 @@ class Loops(commands.Cog):
                 )
 
             else:
+                if daily_online_time:
+                    c_date, time = list(daily_online_time.items())[0]
+                    date_str = c_date.replace("-", " ")
+                    days, hours, minutes, seconds = time_conversion(time)
+                    description = f"Last online on the day: **`{date_str}`**, for total of: **`{days} days, {hours} h, {minutes} min, {seconds} s`**"
+                else:
+                    description = f"Last online on the day: **No information, sorry :(**"
+
                 server_warning_info = ""
-                c_date, time = list(daily_online_time.items())[0]
-                date_str = c_date.replace("-", " ")
-                days, hours, minutes, seconds = time_conversion(time)
                 current_time = get_current_datetime()
 
                 embed = discord.Embed(
                     title=f"{name} is currently OFFLINE!",
-                    description=f"Last online on the day: **`{date_str}`**, for total of: **`{days} days, {hours} h, {minutes} min, {seconds} s`**"
+                    description=f"{description}"
                                 f"\nAt: **`{current_time.time().strftime("%H:%M")}`**" + extra_server_info + server_warning_info,
                     color=discord.Color.red()
                 )

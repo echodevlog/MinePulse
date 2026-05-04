@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from data import config
-from utils.tools import get_current_datetime, date_conversion, time_conversion
+from utils.tools import get_current_datetime, date_conversion, clean_motd
 from utils.api_calls import get_api_data
 
 class Commands(commands.Cog):
@@ -118,13 +118,20 @@ class Commands(commands.Cog):
             motd = data["server"]["motd"]
             categories = data["server"]["categories"]
             server_plan = data["server"]["server_plan"]
-            last_online = data["server"]["last_online"]
-            last_online = date_conversion(last_online)
             joins = data["server"]["joins"]
             boosts = data["server"]["boosts"]
             online = data["server"]["online"]
             maxPlayers = data["server"]["maxPlayers"]
             playerCount = data["server"]["playerCount"]
+
+            if motd and any(char in motd for char in ["<", "[", "]", ">"]):
+                motd = clean_motd(motd)
+
+            if data.get("server").get("last_online"):
+                last_online = data["server"]["last_online"]
+                last_online = date_conversion(last_online)
+            else:
+                last_online = "No information"
 
             if categories:
                 for category in categories:

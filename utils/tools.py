@@ -1,3 +1,4 @@
+import re
 from discord.ext import tasks
 from datetime import datetime
 
@@ -25,6 +26,14 @@ def date_conversion(milliseconds : int):
 def get_current_datetime():
     current_datetime = datetime.now(config.timezone)
     return current_datetime
+
+def clean_motd(motd : str):
+    clean_text = re.sub(r"<[^>]+>", "", motd)
+
+    if re.search(r'\n', clean_text):
+        clean_text = f"```{clean_text}```"
+
+    return clean_text
 
 async def start_loops():
     from utils.data_manager import add_log
