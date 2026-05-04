@@ -13,7 +13,7 @@ BOT_TOKEN : str | None = os.getenv("BOT_TOKEN")
 env_guild_id = os.getenv("GUILD_ID")
 GUILD_ID : int | None = int(env_guild_id) if env_guild_id else None
 BOT_NAME : str = "MinePulse"
-VERSION : int = 0
+VERSION : str = "v1.0.0"
 setup_completed : bool = False
 
 bot : commands.Bot | None = None
