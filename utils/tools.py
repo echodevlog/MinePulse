@@ -1,3 +1,4 @@
+import asyncio
 import re
 from discord.ext import tasks
 from datetime import datetime
@@ -54,3 +55,20 @@ async def start_loops():
                 add_log("Vote loop started.")
             except tasks.LoopAlreadyRunning as e:
                 return
+
+async def stop_vote_loop():
+    from utils.data_manager import add_log
+
+    loops_cog = config.bot.get_cog("Loops")
+
+    if loops_cog:
+        loops_cog.vote_MH_loop.change_interval(time=config.vote_time.timetz())
+
+        if loops_cog.vote_MH_loop.is_running():
+            loops_cog.vote_MH_loop.cancel()
+
+        while loops_cog.vote_MH_loop.is_running():
+            await asyncio.sleep(0.1)
+
+        loops_cog.vote_MH_loop.start()
+        add_log("\nVote loop has been restarted!")

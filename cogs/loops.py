@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands, tasks
-from datetime import datetime, time
 
 from utils.api_calls import get_api_data
 from utils.data_manager import update_data
@@ -113,7 +112,7 @@ class Loops(commands.Cog):
             self.old_player_count = player_count
 
 
-    @tasks.loop(time=datetime.combine(datetime.today(), time(0, 0)).time())
+    @tasks.loop(time=config.vote_time.timetz())
     async def vote_MH_loop(self):
         if not config.setup_completed:
             return
@@ -123,13 +122,13 @@ class Loops(commands.Cog):
             return
 
         embed = discord.Embed(
-            title="Vote Reminded!",
+            title="Vote Reminder!",
             description="Don't forget to vote for MineHut to earn free credits!"
                         "\n[VOTE HERE!](https://findmcserver.com/server/minehut)",
             color=discord.Color.blue()
         )
 
-        if config.vote_notification is not None:
+        if config.vote_notification is not None and config.vote_message:
             await config.vote_message.delete()
         config.vote_message = await config.notifications_channel.send(content=config.vote_role.mention, embed=embed)
         update_data("messages", "vote_message_id", config.vote_message.id)

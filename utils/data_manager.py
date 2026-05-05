@@ -63,7 +63,9 @@ async def read_data_file():
             if saved_data["settings"]["vote_time"] is None:
                 config.vote_time = None
             else:
-                config.vote_time = datetime.strptime(saved_data["settings"]["vote_time"], "%H:%M:%S").time()
+                time = datetime.strptime(saved_data["settings"]["vote_time"], "%H:%M:%S").time()
+                date = datetime.now(config.timezone).date()
+                config.vote_time = datetime.combine(date, time, tzinfo=config.timezone)
 
             # Text Channels
             config.notifications_channel = await discord_object_converter(saved_data["text_channels"]["notification_channel_id"])

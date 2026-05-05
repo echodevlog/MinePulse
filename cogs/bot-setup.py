@@ -7,7 +7,7 @@ from discord.ext import commands
 from datetime import datetime
 
 from utils.data_manager import (update_data)
-from utils.tools import start_loops
+from utils.tools import start_loops, stop_vote_loop
 from utils.api_calls import valid_server_checker
 from utils.discord_tools import dc_embed_for_setup
 
@@ -211,19 +211,26 @@ class TimeModal(discord.ui.Modal, title="Timing for vote notifications"):
         time_str = self.vote_time.value.strip().lower()
 
         try:
-            converted_time = datetime.strptime(time_str, "%I:%M %p").time()
+            time = datetime.strptime(time_str, "%I:%M %p").time()
+            date = datetime.now(config.timezone).date()
+            converted_time = datetime.combine(date, time, tzinfo=config.timezone)
             config.vote_time = converted_time
-            update_data("settings", "vote_time", str(converted_time))
+
+            time_obj = converted_time.timetz()
+            update_data("settings", "vote_time", str(time_obj))
 
             if hasattr(self.parent_view, "create_page"):
                 self.parent_view.vote_time = converted_time
                 self.parent_view.create_page()
                 await interaction.response.edit_message(view=self.parent_view)
             else:
-                await interaction.response.send_message(f"✅ Vote timing has been set to: `{converted_time}`", ephemeral=True)
+                await interaction.response.send_message(f"✅ Vote timing has been set to: `{time_obj}`", ephemeral=True)
+
+            if config.setup_completed:
+                await stop_vote_loop()
 
         except ValueError:
-            return await interaction.response.send_message("❌ **Invalid Format!** Please use the format `HH:MM am/pm` (e.g., `06:30 pm`).", ephemeral=True)
+            return await interaction.response.send_message("❌ **Invalid Format!** Please use `HH:MM am/pm` (e.g., `06:30 pm`).", ephemeral=True)
 
 class SetupView(discord.ui.View):
     def __init__(self, cog: "DiscordCog"):
